@@ -2,10 +2,10 @@
 Repository related to the Catch the Mark competition of the Multimedia Data Security course of University of Trento, academic year 2022/2023
 
 Contributors:
-+ Leonardo Vicentini - ()
-+ Matteo Darra - ()
-+ Sofia Zanrosso - ()
-+ Roberta Bonaccorso - () 
++ Leonardo Vicentini - @vicentinileonardo
++ Matteo Darra - @MatteoDarra
++ Sofia Zanrosso - @sofiazanrosso
++ Roberta Bonaccorso - @robi00
 
 TODO list:
 + Detection
