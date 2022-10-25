@@ -1,5 +1,3 @@
-# Secure and robust digital image watermarking scheme using logistic algorithm and RSA encryption
-# Yang Liu et al
 import time
 import cv2
 import os
