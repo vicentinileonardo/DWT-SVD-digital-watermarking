@@ -8,6 +8,7 @@ from scipy.signal import convolve2d
 from math import sqrt
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import medfilt
+from scipy.fft import dct, idct
 
 # Possible modifications:
 # - Change alpha
@@ -20,7 +21,7 @@ from scipy.signal import medfilt
 # - Change number of watermarks concatenated to embed
 
 
-alpha = 2
+alpha = 0.00605
 
 def embedding(original_image, watermark):
     n_blocks_to_embed = 512
@@ -125,7 +126,7 @@ def embedding(original_image, watermark):
     shape_LL_tmp = np.uint8(shape_LL_tmp)
     LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
 
-    Sw = np.zeros(shape_LL_tmp)
+
     # loops trough x coordinates of blocks_to_watermark_final
     for i in range(len(blocks_to_watermark_final)):
 
@@ -134,23 +135,33 @@ def embedding(original_image, watermark):
 
         LL_tmp = (LL[x:shape_LL_tmp + x, y:shape_LL_tmp + y]).copy()
 
-        # SVD
-        Uc, Sc, Vc = np.linalg.svd(LL_tmp)
-        Sw = Sc.copy()
+        # Get the DCT transform of the image
+        ori_dct = dct(dct(LL_tmp, axis=0, norm='ortho'), axis=1, norm='ortho')
 
-        # embedding
+        # Get the locations of the most perceptually significant components
+        sign = np.sign(ori_dct)
+        ori_dct = abs(ori_dct)
+        rows = LL_tmp.shape[0]
+
+        locations = np.argsort(-ori_dct, axis=None)  # - sign is used to get descending order
+        locations = [(val // rows, val % rows) for val in locations]  # locations as (x,y) coordinates
+        # Embed the watermark
+        watermarked_dct = ori_dct.copy()
+        v = 'multiplicative'
 
         for px in range(0, shape_LL_tmp):
-            if watermark[np.uint8(px + (i * shape_LL_tmp))] == 1:
-                Sw[px] += alpha
-            else:
-                Sw[px] -= alpha
+            mark_val = watermark[np.uint8(px + (i * shape_LL_tmp))]
+            if v == 'additive':
+                watermarked_dct[px] += (alpha * mark_val)
+            elif v == 'multiplicative':
+                watermarked_dct[px] *= 1 + (alpha * mark_val)
 
-        # print(Sw-Sc)
-        LL_new = np.zeros((shape_LL_tmp, shape_LL_tmp))
+        # Restore sign and o back to spatial domain
+        watermarked_dct *= sign
+        watermarked = np.float64(idct(idct(watermarked_dct, axis=1, norm='ortho'), axis=0, norm='ortho'))
 
-        LL_new = (Uc).dot(np.diag(Sw)).dot(Vc)
-        LL[x:shape_LL_tmp + x, y:shape_LL_tmp + y] = LL_new.copy()
+        # Replace the original LL coefficients with the watermarked ones
+        LL[x:shape_LL_tmp + x, y:shape_LL_tmp + y] = watermarked.copy()
 
     Coefficients[0] = LL
     watermarked_image = pywt.waverec2(Coefficients, 'haar')
@@ -159,11 +170,11 @@ def embedding(original_image, watermark):
 
     watermarked_image = np.uint8(watermarked_image)
 
-    print(watermarked_image - original_image)
-    difference = (-watermarked_image + original_image) * np.uint8(blank_image)
-    watermarked_image = original_image + difference
-    print(difference)
-    print(watermarked_image - original_image)
+    #print(watermarked_image - original_image)
+    #difference = (-watermarked_image + original_image) * np.uint8(blank_image)
+    #watermarked_image = original_image + difference
+    #print(difference)
+    #print(watermarked_image - original_image)
 
 
 
@@ -181,8 +192,8 @@ def embedding(original_image, watermark):
 
 
     # Compute watermarked - original and plot it
-    plt.imshow(watermarked_image - original_image, cmap='gray')
-    plt.show()
+    #plt.imshow(watermarked_image - original_image, cmap='gray')
+    #plt.show()
 
     return watermarked_image
 
@@ -646,5 +657,5 @@ np.random.seed(seed=200)
 #np.save('mark.npy', mark)
 
 watermarked_image = embedding(original_image, watermark_ori)
-watermark = extraction(original_image, watermarked_image, watermarked_image)
-bf_attack(original_image, watermarked_image)
+#watermark = extraction(original_image, watermarked_image, watermarked_image)
+#bf_attack(original_image, watermarked_image)
