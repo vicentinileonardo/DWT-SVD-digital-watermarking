@@ -9,6 +9,7 @@ from math import sqrt
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import medfilt
 from scipy.fft import dct, idct
+import math
 
 # Possible modifications:
 # - Change alpha
@@ -21,7 +22,7 @@ from scipy.fft import dct, idct
 # - Change number of watermarks concatenated to embed
 
 
-alpha = 0.00605
+alpha = 1
 
 def embedding(original_image, watermark):
     n_blocks_to_embed = 512
@@ -87,7 +88,7 @@ def embedding(original_image, watermark):
             blocks_to_watermark.append(block_tmp)
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['spatial_value'], reverse=True)
-    print('Blocks to watermark: ' + str(len(blocks_to_watermark)))
+    #print('Blocks to watermark: ' + str(len(blocks_to_watermark)))
     for i in range(len(blocks_to_watermark)):
         blocks_to_watermark[i]['merit'] = i
 
@@ -111,7 +112,7 @@ def embedding(original_image, watermark):
     plt.show()
 
     blocks_to_watermark_final = sorted(blocks_to_watermark_final, key=lambda k: k['locations'], reverse=False)
-    print(blocks_to_watermark_final)
+    #print(blocks_to_watermark_final)
 
     divisions = original_image.shape[0] / block_size
 
@@ -122,7 +123,7 @@ def embedding(original_image, watermark):
     LL = Coefficients[0]
 
     shape_LL_tmp = np.floor(min(shape_LL) / divisions)
-    print(shape_LL_tmp)
+    #print(shape_LL_tmp)
     shape_LL_tmp = np.uint8(shape_LL_tmp)
     LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
 
@@ -147,14 +148,15 @@ def embedding(original_image, watermark):
         locations = [(val // rows, val % rows) for val in locations]  # locations as (x,y) coordinates
         # Embed the watermark
         watermarked_dct = ori_dct.copy()
-        v = 'multiplicative'
 
-        for px in range(0, shape_LL_tmp):
-            mark_val = watermark[np.uint8(px + (i * shape_LL_tmp))]
-            if v == 'additive':
-                watermarked_dct[px] += (alpha * mark_val)
-            elif v == 'multiplicative':
-                watermarked_dct[px] *= 1 + (alpha * mark_val)
+
+
+        for idx, loc in enumerate(locations[1:watermark_size + 1]):
+            if watermark_ori[idx] == 1:
+                watermarked_dct[loc] += (alpha)
+            else:
+                watermarked_dct[loc] -= (alpha)
+
 
         # Restore sign and o back to spatial domain
         watermarked_dct *= sign
@@ -171,16 +173,14 @@ def embedding(original_image, watermark):
     watermarked_image = np.uint8(watermarked_image)
 
     #print(watermarked_image - original_image)
-    #difference = (-watermarked_image + original_image) * np.uint8(blank_image)
-    #watermarked_image = original_image + difference
-    #print(difference)
+    difference = (-watermarked_image + original_image) * np.uint8(blank_image)
+    watermarked_image = original_image + difference
+    #print(difference.dtype)
     #print(watermarked_image - original_image)
-
-
 
     plt.subplot(121)
     plt.title("original")
-    plt.imshow(original_image, cmap='gray')
+    plt.imshow(-watermarked_image + original_image, cmap='gray')
     plt.subplot(122)
     plt.title("watermarked")
     plt.imshow(watermarked_image, cmap='gray')
@@ -190,12 +190,99 @@ def embedding(original_image, watermark):
     w = wpsnr(original_image, watermarked_image)
     print('wPSNR: %.2fdB' % w)
 
-
-    # Compute watermarked - original and plot it
-    #plt.imshow(watermarked_image - original_image, cmap='gray')
-    #plt.show()
-
     return watermarked_image
+
+
+def detection(original_image, watermarked_image, attacked_image):
+
+    watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
+
+    sim = similarity(watermark, watermarked_extracted)
+
+    if sim > T:
+        watermark_status = 1
+    else:
+        watermark_status = 0
+
+    output1 = watermark_status
+    output2 = wpsnr(watermarked_image, attacked_image)
+
+    return output1, output2
+
+
+def extraction(original_image, watermarked_image, attacked_image):
+    n_blocks_to_embed = 512
+    block_size = 8
+    blocks_with_watermark = []
+    divisions = original_image.shape[0] / block_size
+
+    blank_image = np.float64(np.zeros((512, 512)))
+    # compute difference between original and watermarked image
+    difference = (watermarked_image - original_image)
+
+    # fill blocks in differece where the difference is bigger o less than 0
+    for j in range(0, original_image.shape[1], block_size):
+        for i in range(0, original_image.shape[0], block_size):
+            block_tmp = {'locations': (i, j)}
+            if np.average(difference[i:i + block_size, j:j + block_size]) > 0:
+                blank_image[i:i + block_size, j:j + block_size] = 1
+                blocks_with_watermark.append(block_tmp)
+            else:
+                blank_image[i:i + block_size, j:j + block_size] = 0
+
+    # plot blank image
+    plt.title('blank image extraction')
+    plt.imshow(blank_image, cmap='gray')
+    plt.show()
+
+    divisions = original_image.shape[0] / block_size
+
+    shape_LL = np.uint16(original_image.shape[0]/2)
+    shape_LL_tmp = np.floor(shape_LL/ divisions)
+    #print(shape_LL_tmp)
+
+    shape_LL_tmp = np.uint8(shape_LL_tmp)
+    LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
+
+    # loops trough the blocks with watermark and get the block from LL and LLw
+    for i in range(len(blocks_with_watermark)):
+        x = np.uint16(blocks_with_watermark[i]['locations'][0] / 2)
+        y = np.uint16(blocks_with_watermark[i]['locations'][1] / 2)
+
+        img_atk_tmp = (attacked_image[x:(shape_LL_tmp*2) + x, y:(shape_LL_tmp*2) + y]).copy()
+        img_ori_tmp = (original_image[x:(shape_LL_tmp*2) + x, y:(shape_LL_tmp*2) + y]).copy()
+
+        # dwt of the block
+        Coefficients = pywt.dwt2(img_atk_tmp, 'haar')
+        LL_atk = Coefficients[0]
+        Coefficients_ori = pywt.dwt2(img_ori_tmp, 'haar')
+        LL_ori = Coefficients_ori[0]
+
+        # DCT of the LL
+        atk_dct = dct(dct(LL_atk, axis=1, norm='ortho'), axis=0, norm='ortho')
+        atk_dct = abs(atk_dct)
+
+        ori_dct = dct(dct(LL_ori, axis=1, norm='ortho'), axis=0, norm='ortho')
+        ori_dct = abs(ori_dct)
+
+        rows = shape_LL_tmp
+
+        locations = np.argsort(-ori_dct, axis=None)  # - sign is used to get descending order
+
+        locations = [(val // rows, val % rows) for val in locations]  # locations as (x,y) coordinates
+
+        # Generate a watermark
+        watermark_extracted = np.zeros(watermark_size, dtype=np.float64)
+
+
+        # Detect the watermark
+        for idx, loc in enumerate(locations[1: shape_LL_tmp-1]):
+            watermark_extracted[idx+i*2] = (atk_dct[loc] - ori_dct[loc]) / alpha
+            print('Attacked dct values '+str(atk_dct[loc]))
+            print('Ori dct values ' + str(ori_dct[loc]))
+
+
+    return watermark_extracted
 
 
 def wpsnr(img1, img2):
@@ -224,21 +311,23 @@ def get_histogram(x, path):
 def similarity(X, X_star):
     # Computes the similarity measure between the original and the new watermarks.
     s = np.sum(np.multiply(X, X_star)) / np.sqrt(np.sum(np.multiply(X_star, X_star)))
+    print(s)
     return s
 
 
-def compute_thr(sim, mark_size, w):  # w é il watermark originale
-    SIM = np.zeros(1000)
-    SIM[0] = abs(sim)
-    for i in range(1, 100):
+def compute_thr(mark_size, w):  # w é il watermark originale
+    SIM = np.zeros(100)
+    for i in range(0, 100):
         r = np.random.uniform(0.0, 1.0, mark_size)
         # SIM[i] = abs(similarity(w, r))
-        SIM[i] = similarity(w, r)
+        watermarked_image_tmp = embedding(original_image, r)
+        r_ex = extraction(original_image, watermarked_image_tmp, watermarked_image_tmp)
+        SIM[i] = similarity(w, r_ex)
     SIM.sort()
-    t = SIM[-90]
-    # T = t + (0.1 * t)  # forse da integrare con la ROC
+    t = SIM[-2]
+    #T = t + (0.1 * t)  # forse da integrare con la ROC
     T = t  # forse da integrare con la ROC
-    print('T: ' + str(T))
+    print('Threshold: ' + str(T))
     return T
 
 
@@ -365,7 +454,7 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(sim, watermark_size, watermark)
+                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -403,7 +492,7 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(sim, watermark_size, watermark)
+                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -442,7 +531,7 @@ def bf_attack(original_image, watermarked_image):
                     watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                     sim = similarity(watermark, watermarked_extracted)
-                    T = compute_thr(sim, watermark_size, watermark)
+                    T = compute_thr(watermark_size, watermark)
 
                     if sim > T:
                         watermark_status = 1
@@ -482,7 +571,7 @@ def bf_attack(original_image, watermarked_image):
                     watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                     sim = similarity(watermark, watermarked_extracted)
-                    T = compute_thr(sim, watermark_size, watermark)
+                    T = compute_thr(watermark_size, watermark)
 
                     if sim > T:
                         watermark_status = 1
@@ -521,7 +610,7 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(sim, watermark_size, watermark)
+                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -558,7 +647,7 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(sim, watermark_size, watermark)
+                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -588,59 +677,6 @@ def bf_attack(original_image, watermarked_image):
                           '[watermark_status = ' + str(watermark_status) + '] - FAILED')
 
 
-def detection(original_image, watermarked_image, attacked_image):
-    watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
-
-    sim = similarity(watermark, watermarked_extracted)
-    T = compute_thr(sim, watermark_size, watermark)
-
-    if sim > T:
-        watermark_status = 1
-    else:
-        watermark_status = 0
-
-    output1 = watermark_status
-    output2 = wpsnr(watermarked_image, attacked_image)
-
-    return output1, output2
-
-
-def extraction(original_image, watermarked_image, attacked_image):
-    divisions = 4
-
-    # DWT
-    C = pywt.wavedec2(original_image, wavelet='haar', level=1)
-    shape_LL = C[0].shape  # C[0] is LL
-    Cw = pywt.wavedec2(attacked_image, wavelet='haar', level=1)
-    Cwm = pywt.wavedec2(watermarked_image, wavelet='haar', level=1)
-
-    shape_LL = C[0].shape
-    LL = C[0]
-    LLw = Cw[0]
-
-    shape_LL_tmp = np.floor(min(shape_LL) / divisions)
-    shape_LL_tmp = np.uint8(shape_LL_tmp)
-
-    watermark_extracted = np.zeros(1024)
-    LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
-    LL_ori = np.zeros((shape_LL_tmp, shape_LL_tmp))
-    for sqx in range(divisions):
-        for sqy in range(divisions):
-            LL_ori = (
-            LL[shape_LL_tmp * sqx:shape_LL_tmp * (sqx + 1), shape_LL_tmp * sqy:shape_LL_tmp * (sqy + 1)]).copy()
-            LL_tmp = (
-            LLw[shape_LL_tmp * sqx:shape_LL_tmp * (sqx + 1), shape_LL_tmp * sqy:shape_LL_tmp * (sqy + 1)]).copy()
-            # SVD
-            Uc, Sc, Vc = np.linalg.svd(LL_ori)
-            Ucw, Scw, Vcw = np.linalg.svd(LL_tmp)
-            Sdiff = Scw - Sc
-            # print(Sdiff)
-            # embedding
-            for px in range(0, (shape_LL_tmp)):
-                watermark_extracted[px + (shape_LL_tmp) * (sqx * divisions + sqy)] = Sdiff[px] / alpha
-
-    return watermark_extracted
-
 
 watermark_size = 1024
 watermark_path = "howimetyourmark.npy"
@@ -657,5 +693,17 @@ np.random.seed(seed=200)
 #np.save('mark.npy', mark)
 
 watermarked_image = embedding(original_image, watermark_ori)
-#watermark = extraction(original_image, watermarked_image, watermarked_image)
-#bf_attack(original_image, watermarked_image)
+watermark = extraction(original_image, watermarked_image, watermarked_image)
+print(watermark)
+T = compute_thr(watermark_size, watermark)
+bf_attack(original_image, watermarked_image)
+
+
+
+
+
+
+
+
+
+
