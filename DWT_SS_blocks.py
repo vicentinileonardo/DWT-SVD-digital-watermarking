@@ -22,7 +22,7 @@ import math
 # - Change number of watermarks concatenated to embed
 
 
-alpha = 1
+alpha = 5
 
 def embedding(original_image, watermark):
     n_blocks_to_embed = 512
@@ -218,7 +218,7 @@ def extraction(original_image, watermarked_image, attacked_image):
 
     blank_image = np.float64(np.zeros((512, 512)))
     # compute difference between original and watermarked image
-    difference = (watermarked_image - original_image)
+    difference = (-watermarked_image + original_image)
 
     # fill blocks in differece where the difference is bigger o less than 0
     for j in range(0, original_image.shape[1], block_size):
