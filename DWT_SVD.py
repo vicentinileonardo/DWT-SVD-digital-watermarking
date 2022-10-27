@@ -25,9 +25,9 @@ import math
 alpha = 50  # 8 is the lower limit that can be used
 n_blocks_to_embed = 1024
 block_size = 4
-spatial_weight=0.5 # 0: no spatial domain, 1: spatial domain
+spatial_weight = 0.5 # 0: no spatial domain, 1: only spatial domain
 
-attack_weight=1.0 - spatial_weight
+attack_weight = 1.0 - spatial_weight
 def embedding(original_image, watermark_to_embed):
     blocks_to_watermark = []
 
@@ -187,6 +187,9 @@ def embedding(original_image, watermark_to_embed):
 
 def detection(original_image, watermarked_image, attacked_image):
 
+    # start time
+    start = time.time()
+
     watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
     sim = similarity(watermark, watermarked_extracted)
@@ -199,10 +202,18 @@ def detection(original_image, watermarked_image, attacked_image):
     output1 = watermark_status
     output2 = wpsnr(watermarked_image, attacked_image)
 
+    # end time
+    end = time.time()
+    print('[DETECTION] Time: %.2fs' % (end - start))
+
     return output1, output2
 
 
 def extraction(original_image, watermarked_image, attacked_image):
+
+    # start time
+    start = time.time()
+
     blocks_with_watermark = []
     divisions = original_image.shape[0] / block_size
     watermark_extracted = np.float64(np.zeros(watermark_size))
@@ -276,6 +287,10 @@ def extraction(original_image, watermarked_image, attacked_image):
 
         for px in range(block_limit):
             watermark_extracted[px + i * block_limit] = Sdiff[px] / alpha
+
+    #end time
+    end = time.time()
+    print('[EXTRACTION] Time: %.2fs' % (end - start))
 
     return watermark_extracted
 
