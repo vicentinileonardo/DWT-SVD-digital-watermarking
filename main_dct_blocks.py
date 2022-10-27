@@ -23,10 +23,12 @@ import math
 
 
 alpha = 50
+n_blocks_to_embed = 1024
+block_size = 2
+spatial_weight=0.0  # 0: no spatial domain, 1: spatial domain
 
-def embedding(original_image, watermark):
-    n_blocks_to_embed = 1024
-    block_size = 4
+attack_weight=1.0 - spatial_weight
+def embedding(original_image, watermark_to_embed):
     blocks_to_watermark = []
 
     blank_image = np.float64(np.zeros((512, 512)))
@@ -90,11 +92,11 @@ def embedding(original_image, watermark):
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['spatial_value'], reverse=True)
     #print('Blocks to watermark: ' + str(len(blocks_to_watermark)))
     for i in range(len(blocks_to_watermark)):
-        blocks_to_watermark[i]['merit'] = i
+        blocks_to_watermark[i]['merit'] = i*spatial_weight
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['attack_value'], reverse=False)
     for i in range(len(blocks_to_watermark)):
-        blocks_to_watermark[i]['merit'] += i
+        blocks_to_watermark[i]['merit'] += i*attack_weight
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['merit'], reverse=True)
 
     blank_image = np.float64(np.zeros((512, 512)))
@@ -143,8 +145,8 @@ def embedding(original_image, watermark):
 
 
 
-        for idx, loc in enumerate(locations[1:2]):
-            if watermark_ori[idx+i] == 1:
+        for idx, loc in enumerate(locations[1:np.uint8(watermark_size/n_blocks_to_embed)+1]):
+            if watermark_to_embed[idx+i] == 1:
                 watermarked_dct[loc] += (alpha)
 
 
@@ -203,11 +205,9 @@ def detection(original_image, watermarked_image, attacked_image):
 
 
 def extraction(original_image, watermarked_image, attacked_image):
-    n_blocks_to_embed = 1024
-    block_size = 4
     blocks_with_watermark = []
     divisions = original_image.shape[0] / block_size
-    watermark_extracted = np.zeros(1024)
+    watermark_extracted = np.float64(np.zeros(watermark_size))
     blank_image = np.float64(np.zeros((512, 512)))
     # compute difference between original and watermarked image
 
@@ -257,7 +257,7 @@ def extraction(original_image, watermarked_image, attacked_image):
 
 
         # Detect the watermark
-        for idx, loc in enumerate(locations[1:2]):
+        for idx, loc in enumerate(locations[1:np.uint8(watermark_size/n_blocks_to_embed)+1]):
             watermark_extracted[i] += np.float64(atk_dct[loc] - ori_dct[loc]) / np.float64(alpha)
 
     return watermark_extracted
@@ -271,7 +271,7 @@ def wpsnr(img1, img2):
     same = not np.any(difference)
     if same is True:
         return 9999999
-    csf = np.genfromtxt('csf.csv', delimiter=',')
+    csf = np.genfromtxt('utility/csf.csv', delimiter=',')
     ew = convolve2d(difference, np.rot90(csf, 2), mode='valid')
     decibels = 20.0 * np.log10(1.0 / sqrt(np.mean(np.mean(ew ** 2))))
     return decibels
@@ -654,18 +654,21 @@ watermark_size = 1024
 watermark_path = "howimetyourmark.npy"
 watermark_ori = np.load(watermark_path)
 
-original_image_path = "lena.bmp"
+original_image_path = "images/lena.bmp"
 original_image = cv2.imread(original_image_path, 0)
 
-np.random.seed(seed=100)
+np.random.seed(seed=1002)
 
 # Generate a watermark
 mark = np.random.uniform(0.0, 1.0, watermark_size)
-#mark = np.uint8(np.rint(mark))
+mark = np.uint8(np.rint(mark))
 #np.save('mark.npy', mark)
 
 watermarked_image = embedding(original_image, watermark_ori)
 watermark = extraction(original_image, watermarked_image, watermarked_image)
+watermarked_image2 = embedding(original_image, mark)
+watermark = extraction(original_image, watermarked_image2, watermarked_image2)
+
 #round the watermark
 watermark[watermark<0.5] = 0
 watermark[watermark>=0.5] = 1
