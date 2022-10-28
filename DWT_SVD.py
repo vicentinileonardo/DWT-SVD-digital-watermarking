@@ -22,12 +22,12 @@ import math
 # - Change number of watermarks concatenated to embed
 
 '''PARAMETERS'''
-alpha = 27  # 8 is the lower limit that can be used
+alpha = 12  # 8 is the lower limit that can be used
 n_blocks_to_embed = 1024
 block_size = 4
 #spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
-spatial_function = 'median'
-spatial_weight = 0.5 # 0: no spatial domain, 1: only spatial domain
+spatial_function = 'mean'
+spatial_weight = 0.65 # 0: no spatial domain, 1: only spatial domain
 attack_weight = 1.0 - spatial_weight
 
 
@@ -364,6 +364,77 @@ def compute_thr(mark_size, w):  # w é il watermark originale
     print('[COMPUTE_THR] Threshold: ' + str(T))
     return T
 
+#############   ROC     #############
+
+def compute_roc(original_image, watermarked_image, attacked_image, watermark_size, T):
+    from sklearn.metrics import roc_curve, auc
+
+    # import an image
+    '''YOUR CODE'''
+    # generate your watermark (if it is necessary)
+    '''YOUR CODE'''
+
+    # scores and labels are two lists we will use to append the values of similarity and their labels
+    # In scores we will append the similarity between our watermarked image and the attacked one,
+    # or  between the attacked watermark and a random watermark
+    # In labels we will append the 1 if the scores was computed between the watermarked image and the attacked one,
+    # and 0 otherwise
+    scores = []
+    labels = []
+    # Embed Watermark
+    '''YOUR CODE'''
+
+    sample = 0
+    while sample < 999:
+        # fakemark is the watermark for H0
+        fakemark = np.random.uniform(0.0, 1.0, mark_size)
+        fakemark = np.uint8(np.rint(fakemark))
+        # random attack to watermarked image (you can modify it)
+        res_att = random_attack(watermarked)
+        # extract attacked watermark
+
+        '''YOUR CODE'''
+
+        # compute similarity H1
+        scores.append(similarity(mark, w_ex))
+        labels.append(1)
+        # compute similarity H0
+        scores.append(similarity(fakemark, w_ex))
+        labels.append(0)
+        sample += 1
+
+
+        # compute ROC
+        fpr, tpr, tau = roc_curve(np.asarray(labels), np.asarray(scores), drop_intermediate=False)
+        # compute AUC
+        roc_auc = auc(fpr, tpr)
+
+        plt.figure()
+        lw = 2
+        plt.plot(fpr,
+                 tpr,
+                 color='darkorange',
+                 lw=lw,
+                 label='AUC = %0.2f' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([-0.01, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic example')
+        plt.legend(loc="lower right")
+        plt.show()
+
+        idx_tpr = np.where((fpr - 0.05) == min(i for i in (fpr - 0.05) if i > 0))
+        print('For a FPR approximately equals to 0.05 corresponds a TPR equals to %0.2f' % tpr[idx_tpr[0][0]])
+        print('For a FPR approximately equals to 0.05 corresponds a threshold equals to %0.2f' % tau[idx_tpr[0][0]])
+        print('Check FPR %0.2f' % fpr[idx_tpr[0][0]])
+
+
+
+
+
+
 
 '''ATTACKS PARAMETERS'''
 # brute force attack
@@ -413,7 +484,6 @@ resizing_scale_values = [0.01, 0.05, 0.1, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
 
 '''ATTACKS'''
 def jpeg_compression(img, QF):
-    import cv2
     cv2.imwrite('tmp.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), QF])
     attacked = cv2.imread('tmp.jpg', 0)
     os.remove('tmp.jpg')
@@ -460,12 +530,21 @@ def plot_attack(original_image, watermarked_image, attacked_image):
 
 def print_successful_attacks(successful_attacks, image_name='lena.bmp'):
     import json
-    output_file = open('Paper2_successful_attacks_' + image_name + '.txt', 'w', encoding='utf-8')
+    output_file = open('Successful_attacks_' + image_name + '.txt', 'w', encoding='utf-8')
     output_file.write(image_name + "\n")
+
+    output_file.write("alpha: " + str(alpha) + "\n")
+    output_file.write("block_size: " + str(block_size) + "\n")
+    output_file.write("n_blocks_to_embed: " + str(n_blocks_to_embed) + "\n")
+    output_file.write("spatial_function: " + str(spatial_function) + "\n")
+    output_file.write("spatial_weight: " + str(spatial_weight) + "\n")
+    output_file.write("attack_weight: " + str(attack_weight) + "\n")
+
     for dic in successful_attacks:
         json.dump(dic, output_file)
         output_file.write("\n")
 
+    output_file.close()
 
 def bf_attack(original_image, watermarked_image):
     current_best_wpsnr = 0
@@ -475,7 +554,6 @@ def bf_attack(original_image, watermarked_image):
         if attack == 'jpeg_compression':
             for QF_value in reversed(jpeg_compression_QF_values):
                 watermarked_to_attack = watermarked_image.copy()
-                print(watermarked_to_attack.dtype)
                 attacked_image = jpeg_compression(watermarked_to_attack, QF_value)
 
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
@@ -497,9 +575,8 @@ def bf_attack(original_image, watermarked_image):
                 if watermark_status == 0:
                     if tmp_wpsnr >= 35.0:
                         successful_attacks.append(current_attack)
-                        #if tmp_wpsnr > current_best_wpsnr:
-                        #    current_best_wpsnr = tmp_wpsnr
-                        successful_attacks.append(current_attack)
+                        if tmp_wpsnr > current_best_wpsnr:
+                            current_best_wpsnr = tmp_wpsnr
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
@@ -538,7 +615,6 @@ def bf_attack(original_image, watermarked_image):
                         successful_attacks.append(current_attack)
                         if tmp_wpsnr > current_best_wpsnr:
                             current_best_wpsnr = tmp_wpsnr
-                        successful_attacks.append(current_attack)
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
@@ -579,7 +655,6 @@ def bf_attack(original_image, watermarked_image):
                             successful_attacks.append(current_attack)
                             if tmp_wpsnr > current_best_wpsnr:
                                 current_best_wpsnr = tmp_wpsnr
-                            successful_attacks.append(current_attack)
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                             plot_attack(original_image, watermarked_image, attacked_image)
@@ -619,7 +694,6 @@ def bf_attack(original_image, watermarked_image):
                             successful_attacks.append(current_attack)
                             if tmp_wpsnr > current_best_wpsnr:
                                 current_best_wpsnr = tmp_wpsnr
-                            successful_attacks.append(current_attack)
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                             plot_attack(original_image, watermarked_image, attacked_image)
@@ -694,7 +768,6 @@ def bf_attack(original_image, watermarked_image):
                         successful_attacks.append(current_attack)
                         if tmp_wpsnr > current_best_wpsnr:
                             current_best_wpsnr = tmp_wpsnr
-                        successful_attacks.append(current_attack)
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
@@ -710,10 +783,12 @@ np.set_printoptions(threshold=np.inf)
 watermark_size = 1024
 original_image_path = "images/lena.bmp"
 original_image = cv2.imread(original_image_path, 0)
+
 watermarked_image = embedding(original_image)
-#extract watermark from watermarked image
+
 watermarked_image_dummy = watermarked_image.copy()
 watermark = extraction(original_image, watermarked_image, watermarked_image_dummy)
+
 plt.subplot(121)
 plt.title('Original')
 plt.imshow(original_image, cmap='gray')
@@ -721,12 +796,15 @@ plt.subplot(122)
 plt.title('Watermarked')
 plt.imshow(watermarked_image, cmap='gray')
 plt.show()
+
 T = compute_thr(watermark_size, watermark)
 bf_attack(original_image, watermarked_image)
-#print_successful_attacks(successful_attacks)
+
 
 print("-------------- SUCCESSFUL ATTACKS --------------")
 print(successful_attacks)
+print("------------")
+print_successful_attacks(successful_attacks)
 
 
 
