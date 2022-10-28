@@ -696,8 +696,11 @@ mark = np.random.uniform(0.0, 1.0, watermark_size)
 mark = np.uint8(np.rint(mark))
 #np.save('mark.npy', mark)
 
+
+
 watermarked_image = embedding(original_image, watermark_ori)
-watermark = extraction(original_image, watermarked_image, watermarked_image)
+watermarked_image_dummy = watermarked_image.copy()
+watermark = extraction(original_image, watermarked_image, watermarked_image_dummy)
 
 #round the watermark
 watermark[watermark<0.5] = 0
@@ -708,6 +711,11 @@ print('##############')
 print('[GLOBAL]', watermark - watermark_ori)
 print('[GLOBAL]',watermark_ori)
 T = compute_thr(watermark_size, watermark)
+
+o1, o2 = detection(original_image, watermarked_image, watermarked_image)
+print('o1 = %f' % o1)
+print('o2 = %f' % o2)
+
 bf_attack(original_image, watermarked_image)
 print_successful_attacks(successful_attacks)
 
