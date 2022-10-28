@@ -21,14 +21,20 @@ import math
 # - Change block size
 # - Change number of watermarks concatenated to embed
 
-
-alpha = 50  # 8 is the lower limit that can be used
+'''PARAMETERS'''
+alpha = 8  # 8 is the lower limit that can be used
 n_blocks_to_embed = 1024
 block_size = 4
 spatial_weight = 0.5 # 0: no spatial domain, 1: only spatial domain
 
 attack_weight = 1.0 - spatial_weight
-def embedding(original_image, watermark_to_embed):
+
+'''EMBEDDING'''
+def embedding(original_image):
+    watermark_size = 1024
+    watermark_path = "howimetyourmark.npy"
+    watermark_to_embed = np.load(watermark_path)
+
     blocks_to_watermark = []
 
     blank_image = np.float64(np.zeros((512, 512)))
@@ -70,11 +76,9 @@ def embedding(original_image, watermark_to_embed):
         attacked_image_tmp = cv2.resize(original_image, (0, 0), fx=scale, fy=scale)
         attacked_image_tmp = cv2.resize(attacked_image_tmp, (512, 512))
         blank_image += np.abs(attacked_image_tmp - original_image)
-
-    # plot blank image
+    #plot blank image
     plt.imshow(blank_image, cmap='gray')
     plt.show()
-
     # end time
     end = time.time()
     print("Time of attacks for embedding: " + str(end - start))
@@ -90,13 +94,13 @@ def embedding(original_image, watermark_to_embed):
             blocks_to_watermark.append(block_tmp)
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['spatial_value'], reverse=True)
-    #print('Blocks to watermark: ' + str(len(blocks_to_watermark)))
     for i in range(len(blocks_to_watermark)):
         blocks_to_watermark[i]['merit'] = i*spatial_weight
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['attack_value'], reverse=False)
     for i in range(len(blocks_to_watermark)):
         blocks_to_watermark[i]['merit'] += i*attack_weight
+
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['merit'], reverse=True)
 
     blank_image = np.float64(np.zeros((512, 512)))
@@ -108,35 +112,26 @@ def embedding(original_image, watermark_to_embed):
         blank_image[tmp['locations'][0]:tmp['locations'][0] + block_size,
         tmp['locations'][1]:tmp['locations'][1] + block_size] = 1
 
-    # plot blank image
-    plt.title('[EMBEDDING] Blocks to watermark')
-    plt.imshow(blank_image, cmap='gray')
-    plt.show()
-
     blocks_to_watermark_final = sorted(blocks_to_watermark_final, key=lambda k: k['locations'], reverse=False)
-    #print(blocks_to_watermark_final)
+
+####################################################################################################################
 
     divisions = original_image.shape[0] / block_size
 
-
-    Coefficients = pywt.wavedec2(original_image, wavelet='haar', level=1)
-    shape_LL = Coefficients[0].shape  # Coefficients[0] is LL
-    LL = Coefficients[0]
-
-    shape_LL_tmp = np.floor(min(shape_LL) / divisions)
-    #print(shape_LL_tmp)
+    shape_LL_tmp = np.floor(original_image.shape[0]/ (2*divisions))
     shape_LL_tmp = np.uint8(shape_LL_tmp)
-    LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
-
-    Sw = np.zeros(shape_LL_tmp)
+    watermarked_image=original_image.copy()
     # loops trough x coordinates of blocks_to_watermark_final
     for i in range(len(blocks_to_watermark_final)):
 
-        x = np.uint16(blocks_to_watermark_final[i]['locations'][0] / 2)
-        y = np.uint16(blocks_to_watermark_final[i]['locations'][1] / 2)
+        x = np.uint16(blocks_to_watermark_final[i]['locations'][0])
+        y = np.uint16(blocks_to_watermark_final[i]['locations'][1])
 
-        LL_tmp = (LL[x:shape_LL_tmp + x, y:shape_LL_tmp + y]).copy()
-
+        #get the block from the original image
+        block = original_image[x:x + block_size, y:y + block_size]
+        #compute the LL of the block
+        Coefficients = pywt.wavedec2(block, wavelet='haar', level=1)
+        LL_tmp = Coefficients[0]
         # SVD
         Uc, Sc, Vc = np.linalg.svd(LL_tmp)
         Sw = Sc.copy()
@@ -144,39 +139,25 @@ def embedding(original_image, watermark_to_embed):
         # embedding
 
         for px in range(0, np.uint16(watermark_size/n_blocks_to_embed)):
-            if watermark_to_embed[np.uint16(px + (i * np.uint8(watermark_size/n_blocks_to_embed)))] == 1:
+            if watermark_to_embed[np.uint16(px + (i * np.uint16(watermark_size/n_blocks_to_embed)))] == 1:
                 Sw[px] += alpha
-        # print(Sw-Sc)
+
         LL_new = np.zeros((shape_LL_tmp, shape_LL_tmp))
-
         LL_new = (Uc).dot(np.diag(Sw)).dot(Vc)
-        LL[x:shape_LL_tmp + x, y:shape_LL_tmp + y] = LL_new.copy()
+        #compute the new block
+        Coefficients[0] = LL_new
+        block_new = pywt.waverec2(Coefficients, wavelet='haar')
+        #replace the block in the original image
+        watermarked_image[x:x + block_size, y:y + block_size] = block_new
 
-    Coefficients[0] = LL
-    watermarked_image = pywt.waverec2(Coefficients, 'haar')
+
+####################################################################################################################
 
     watermarked_image = np.uint8(watermarked_image)
 
-    #print(watermarked_image - original_image)
     difference = (-watermarked_image + original_image) * np.uint8(blank_image)
-
-    #plot difference
-    plt.title("[EMBEDDING] Embedding difference")
-    plt.imshow(difference, cmap='gray')
-    plt.show()
-
     watermarked_image = original_image + difference
-    watermarked_image += np.uint8(blank_image)  # forse con SVD non serve
-    #print(difference.dtype)
-    #print(watermarked_image - original_image)
-
-    plt.subplot(121)
-    plt.title("[EMBEDDING] Original")
-    plt.imshow(original_image, cmap='gray')
-    plt.subplot(122)
-    plt.title("[EMBEDDING] Watermarked")
-    plt.imshow(watermarked_image, cmap='gray')
-    plt.show()
+    watermarked_image += np.uint8(blank_image)
 
     # Compute quality
     w = wpsnr(original_image, watermarked_image)
@@ -185,15 +166,72 @@ def embedding(original_image, watermark_to_embed):
     return watermarked_image
 
 
+'''DETECTION'''
 def detection(original_image, watermarked_image, attacked_image):
-
+    watermark_size = 1024
     # start time
     start = time.time()
+    #extract watermark from watermarked image
+    watermarked_image_dummy = watermarked_image.copy()
+    watermark_extracted_wm = extraction(original_image, watermarked_image, watermarked_image_dummy)
 
-    watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
+    #starting extraction
+    blocks_with_watermark = []
+    divisions = original_image.shape[0] / block_size
+    watermark_extracted = np.float64(np.zeros(watermark_size))
+    blank_image = np.float64(np.zeros((512, 512)))
+    # compute difference between original and watermarked image
 
-    sim = similarity(watermark, watermarked_extracted)
+    difference = (watermarked_image - original_image)
 
+    # fill blocks in differece where the difference is bigger o less than 0
+    for i in range(0, original_image.shape[1], block_size):
+        for j in range(0, original_image.shape[0], block_size):
+            block_tmp = {'locations': (i, j)}
+            if np.average(difference[i:i + block_size, j:j + block_size]) > 0:
+                blank_image[i:i + block_size, j:j + block_size] = 1
+                blocks_with_watermark.append(block_tmp)
+            else:
+                blank_image[i:i + block_size, j:j + block_size] = 0
+
+    attacked_image -= np.uint8(blank_image)
+
+    ####################################################################################################################
+
+    shape_LL_tmp = np.floor(original_image.shape[0] / divisions)
+    shape_LL_tmp = np.uint8(shape_LL_tmp)
+
+    watermark_extracted = np.zeros(1024)
+    # print(watermark_extracted)
+    for i in range(len(blocks_with_watermark)):
+        x = np.uint16(blocks_with_watermark[i]['locations'][0])
+        y = np.uint16(blocks_with_watermark[i]['locations'][1])
+        # get the block from the attacked image
+        block = attacked_image[x:x + block_size, y:y + block_size]
+        # compute the LL of the block
+        Coefficients = pywt.wavedec2(block, wavelet='haar', level=1)
+        LL_tmp = Coefficients[0]
+        # SVD
+        Uc, Sc, Vc = np.linalg.svd(LL_tmp)
+        # get the block from the original image
+        block_ori = original_image[x:x + block_size, y:y + block_size]
+        # compute the LL of the block
+        Coefficients_ori = pywt.wavedec2(block_ori, wavelet='haar', level=1)
+        LL_ori = Coefficients_ori[0]
+        # SVD
+        Uc_ori, Sc_ori, Vc_ori = np.linalg.svd(LL_ori)
+
+        Sdiff = Sc_ori - Sc
+
+        block_limit = np.uint16(watermark_size / n_blocks_to_embed)
+
+        for px in range(0, block_limit):
+            watermark_extracted[px + i * block_limit] = Sdiff[px] / alpha
+
+    ####################################################################################################################
+    #end of extraction
+
+    sim = similarity(watermark_extracted_wm, watermark_extracted)
     if sim > T:
         watermark_status = 1
     else:
@@ -208,9 +246,8 @@ def detection(original_image, watermarked_image, attacked_image):
 
     return output1, output2
 
-
 def extraction(original_image, watermarked_image, attacked_image):
-
+    watermark_size = 1024
     # start time
     start = time.time()
 
@@ -221,9 +258,7 @@ def extraction(original_image, watermarked_image, attacked_image):
     # compute difference between original and watermarked image
 
     difference = (watermarked_image - original_image)
-    plt.title('[EXTRACTION] Difference before reconstruction')
-    plt.imshow(difference, cmap='gray')
-    plt.show()
+
     # fill blocks in differece where the difference is bigger o less than 0
     for i in range(0, original_image.shape[1], block_size):
         for j in range(0, original_image.shape[0], block_size):
@@ -233,60 +268,43 @@ def extraction(original_image, watermarked_image, attacked_image):
                 blocks_with_watermark.append(block_tmp)
             else:
                 blank_image[i:i + block_size, j:j + block_size] = 0
-    # plot blank image
-    plt.title('[EXTRACTION] Blank image ')
-    plt.imshow(blank_image, cmap='gray')
-    plt.show()
+
     attacked_image-=np.uint8(blank_image)
-    difference2 = (watermarked_image - original_image)
-    # plot difference
-    plt.title('[EXTRACTION] Difference after reconstruction')
-    plt.imshow(difference2, cmap='gray')
-    plt.show()
 
-    # loops through the blocks with watermark and get the block from LL and LLw
-    # DWT
-    C = pywt.wavedec2(original_image, wavelet='haar', level=1)
-    shape_LL = C[0].shape  # C[0] is LL
-    Cw = pywt.wavedec2(attacked_image, wavelet='haar', level=1)
-    Cwm = pywt.wavedec2(watermarked_image, wavelet='haar', level=1)
+####################################################################################################################
 
-    shape_LL = C[0].shape
-    LL = C[0]
-    LLw = Cw[0]
 
-    shape_LL_tmp = np.floor(min(shape_LL) / divisions)
+    shape_LL_tmp = np.floor(original_image.shape[0] / divisions)
     shape_LL_tmp = np.uint8(shape_LL_tmp)
 
     watermark_extracted = np.zeros(1024)
-    LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
-    LL_ori = np.zeros((shape_LL_tmp, shape_LL_tmp))
     #print(watermark_extracted)
     for i in range(len(blocks_with_watermark)):
-        x = np.uint16(blocks_with_watermark[i]['locations'][0]/2)
-        y = np.uint16(blocks_with_watermark[i]['locations'][1]/2)
-
-        LL_ori = (
-                LL[x: x + shape_LL_tmp,
-                y: y + shape_LL_tmp]
-                ).copy()
-
-        #print('LL_ori.shape', i, LL_ori.shape)
-
-        LL_tmp = (
-                LLw[x: x + shape_LL_tmp,
-                y: y + shape_LL_tmp]
-                ).copy()
-
+        x = np.uint16(blocks_with_watermark[i]['locations'][0])
+        y = np.uint16(blocks_with_watermark[i]['locations'][1])
+        #get the block from the attacked image
+        block = attacked_image[x:x + block_size, y:y + block_size]
+        #compute the LL of the block
+        Coefficients = pywt.wavedec2(block, wavelet='haar', level=1)
+        LL_tmp = Coefficients[0]
         # SVD
-        Uc, Sc, Vc = np.linalg.svd(LL_ori)
-        Ucw, Scw, Vcw = np.linalg.svd(LL_tmp)
-        Sdiff = Sc-Scw
+        Uc, Sc, Vc = np.linalg.svd(LL_tmp)
+        #get the block from the original image
+        block_ori = original_image[x:x + block_size, y:y + block_size]
+        #compute the LL of the block
+        Coefficients_ori = pywt.wavedec2(block_ori, wavelet='haar', level=1)
+        LL_ori = Coefficients_ori[0]
+        # SVD
+        Uc_ori, Sc_ori, Vc_ori = np.linalg.svd(LL_ori)
+
+        Sdiff = Sc_ori-Sc
 
         block_limit = np.uint16(watermark_size/n_blocks_to_embed)
 
-        for px in range(block_limit):
-            watermark_extracted[px + i * block_limit] = Sdiff[px] / alpha
+        for px in range(0,block_limit):
+            watermark_extracted[px + i * block_limit] = Sdiff[px]/ alpha
+
+####################################################################################################################
 
     #end time
     end = time.time()
@@ -295,6 +313,7 @@ def extraction(original_image, watermarked_image, attacked_image):
     return watermark_extracted
 
 
+'''UTILITY'''
 def wpsnr(img1, img2):
     img1 = np.float32(img1) / 255.0
     img2 = np.float32(img2) / 255.0
@@ -328,7 +347,6 @@ def compute_thr(mark_size, w):  # w é il watermark originale
     SIM = np.zeros(100)
     for i in range(0, 100):
         r = np.random.uniform(0.0, 1.0, mark_size)
-        # SIM[i] = abs(similarity(w, r))
         SIM[i] = similarity(w, r)
     SIM.sort()
     t = SIM[-10]
@@ -338,42 +356,7 @@ def compute_thr(mark_size, w):  # w é il watermark originale
     return T
 
 
-###ATTACKS###
-
-def jpeg_compression(img, QF):
-    import cv2
-    cv2.imwrite('tmp.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), QF])
-    attacked = cv2.imread('tmp.jpg', 0)
-    os.remove('tmp.jpg')
-    return attacked
-
-
-def blur(img, sigma):
-    attacked = gaussian_filter(img, sigma)
-    return attacked
-
-
-def awgn(img, std, seed):
-    mean = 0.0
-    # np.random.seed(seed)
-    attacked = img + np.random.normal(mean, std, img.shape)
-    attacked = np.clip(attacked, 0, 255)
-    return attacked
-
-
-def sharpening(img, sigma, alpha):
-    filter_blurred_f = gaussian_filter(img, sigma)
-    attacked = img + alpha * (img - filter_blurred_f)
-    return attacked
-
-
-def median(img, kernel_size):
-    attacked = medfilt(img, kernel_size)
-    return attacked
-
-
-####ATTACK PARAMETERS
-
+'''ATTACKS PARAMETERS'''
 # brute force attack
 successful_attacks = []
 # attacks = ["awgn", "blur", "sharpening", "median", "resizing", "jpeg_compression"]
@@ -419,6 +402,37 @@ median_kernel_size_values = [[1, 3], [1, 5],
 # resizing
 resizing_scale_values = [0.01, 0.05, 0.1, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+'''ATTACKS'''
+def jpeg_compression(img, QF):
+    import cv2
+    cv2.imwrite('tmp.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), QF])
+    attacked = cv2.imread('tmp.jpg', 0)
+    os.remove('tmp.jpg')
+    return attacked
+
+
+def blur(img, sigma):
+    attacked = gaussian_filter(img, sigma)
+    return attacked
+
+
+def awgn(img, std, seed):
+    mean = 0.0
+    # np.random.seed(seed)
+    attacked = img + np.random.normal(mean, std, img.shape)
+    attacked = np.clip(attacked, 0, 255)
+    return attacked
+
+
+def sharpening(img, sigma, alpha):
+    filter_blurred_f = gaussian_filter(img, sigma)
+    attacked = img + alpha * (img - filter_blurred_f)
+    return attacked
+
+
+def median(img, kernel_size):
+    attacked = medfilt(img, kernel_size)
+    return attacked
 
 def plot_attack(original_image, watermarked_image, attacked_image):
     plt.figure(figsize=(15, 6))
@@ -434,6 +448,7 @@ def plot_attack(original_image, watermarked_image, attacked_image):
     plt.show()
 
 
+
 def print_successful_attacks(successful_attacks, image_name='lena.bmp'):
     import json
     output_file = open('Paper2_successful_attacks_' + image_name + '.txt', 'w', encoding='utf-8')
@@ -443,7 +458,6 @@ def print_successful_attacks(successful_attacks, image_name='lena.bmp'):
         output_file.write("\n")
 
 
-####BF ATTACK
 def bf_attack(original_image, watermarked_image):
     current_best_wpsnr = 0
 
@@ -458,7 +472,6 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -496,7 +509,6 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -535,7 +547,6 @@ def bf_attack(original_image, watermarked_image):
                     watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                     sim = similarity(watermark, watermarked_extracted)
-                    T = compute_thr(watermark_size, watermark)
 
                     if sim > T:
                         watermark_status = 1
@@ -575,8 +586,6 @@ def bf_attack(original_image, watermarked_image):
                     watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                     sim = similarity(watermark, watermarked_extracted)
-                    T = compute_thr(watermark_size, watermark)
-
                     if sim > T:
                         watermark_status = 1
                     else:
@@ -614,7 +623,6 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -651,7 +659,6 @@ def bf_attack(original_image, watermarked_image):
                 watermarked_extracted = extraction(original_image, watermarked_image, attacked_image)
 
                 sim = similarity(watermark, watermarked_extracted)
-                T = compute_thr(watermark_size, watermark)
 
                 if sim > T:
                     watermark_status = 1
@@ -680,45 +687,25 @@ def bf_attack(original_image, watermarked_image):
                     print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                           '[watermark_status = ' + str(watermark_status) + '] - FAILED')
 
-
+'''MAIN CODE'''
 np.set_printoptions(threshold=np.inf)
 watermark_size = 1024
-watermark_path = "howimetyourmark.npy"
-watermark_ori = np.load(watermark_path)
-
 original_image_path = "images/lena.bmp"
 original_image = cv2.imread(original_image_path, 0)
-
-np.random.seed(seed=1002)
-
-# Generate a watermark
-mark = np.random.uniform(0.0, 1.0, watermark_size)
-mark = np.uint8(np.rint(mark))
-#np.save('mark.npy', mark)
-
-
-
-watermarked_image = embedding(original_image, watermark_ori)
+watermarked_image = embedding(original_image)
+#extract watermark from watermarked image
 watermarked_image_dummy = watermarked_image.copy()
 watermark = extraction(original_image, watermarked_image, watermarked_image_dummy)
-
-#round the watermark
-watermark[watermark<0.5] = 0
-watermark[watermark>=0.5] = 1
-
-print('[GLOBAL] SIM = %f' % similarity(watermark, watermark_ori))
-print('##############')
-print('[GLOBAL]', watermark - watermark_ori)
-print('[GLOBAL]',watermark_ori)
+plt.subplot(121)
+plt.title('Original')
+plt.imshow(original_image, cmap='gray')
+plt.subplot(122)
+plt.title('Watermarked')
+plt.imshow(watermarked_image, cmap='gray')
+plt.show()
 T = compute_thr(watermark_size, watermark)
-
-o1, o2 = detection(original_image, watermarked_image, watermarked_image)
-print('o1 = %f' % o1)
-print('o2 = %f' % o2)
-
 bf_attack(original_image, watermarked_image)
-print_successful_attacks(successful_attacks)
-
+#print_successful_attacks(successful_attacks)
 
 
 
