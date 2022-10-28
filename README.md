@@ -8,7 +8,6 @@ Contributors:
 + Roberta Bonaccorso - [robi00](https://github.com/robi00)
 
 TODO list:
-+ Detection
 + Threshold computation
 + ROC
 + Modularize the code
