@@ -22,12 +22,14 @@ import math
 # - Change number of watermarks concatenated to embed
 
 '''PARAMETERS'''
-alpha = 8  # 8 is the lower limit that can be used
+alpha = 27  # 8 is the lower limit that can be used
 n_blocks_to_embed = 1024
 block_size = 4
+#spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
+spatial_function = 'median'
 spatial_weight = 0.5 # 0: no spatial domain, 1: only spatial domain
-
 attack_weight = 1.0 - spatial_weight
+
 
 '''EMBEDDING'''
 def embedding(original_image):
@@ -46,10 +48,7 @@ def embedding(original_image):
         attacked_image_tmp = jpeg_compression(original_image, qf)
         blank_image += np.abs(attacked_image_tmp - original_image)
 
-    blur_sigma_values = [0.1, 0.5,
-                         1, 2,
-                         [1, 1], [2, 1]
-                         ]
+    blur_sigma_values = [0.1, 0.5, 1, 2, [1, 1], [2, 1]]
     for sigma in blur_sigma_values:
         attacked_image_tmp = blur(original_image, sigma)
         blank_image += np.abs(attacked_image_tmp - original_image)
@@ -81,14 +80,24 @@ def embedding(original_image):
     plt.show()
     # end time
     end = time.time()
-    print("Time of attacks for embedding: " + str(end - start))
+    print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
+    print('[EMBEDDING] Spatial function:', spatial_function)
+
 
     # find the min blocks (sum or mean of the 64 elements for each block) using sorting (min is best)
 
     for i in range(0, original_image.shape[0], block_size):
         for j in range(0, original_image.shape[1], block_size):
+
+            if spatial_function == 'average':
+                spatial_value = np.average(original_image[i:i + block_size, j:j + block_size])
+            elif spatial_function == 'median':
+                spatial_value = np.median(original_image[i:i + block_size, j:j + block_size])
+            elif spatial_function == 'mean':
+                spatial_value = np.mean(original_image[i:i + block_size, j:j + block_size])
+
             block_tmp = {'locations': (i, j),
-                         'spatial_value': np.average(original_image[i:i + block_size, j:j + block_size]),
+                         'spatial_value': spatial_value,
                          'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size])
                          }
             blocks_to_watermark.append(block_tmp)
