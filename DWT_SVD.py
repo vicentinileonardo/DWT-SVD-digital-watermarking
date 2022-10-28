@@ -464,7 +464,7 @@ def bf_attack(original_image, watermarked_image):
     for attack in attacks:
         ########## JPEG ##########
         if attack == 'jpeg_compression':
-            for QF_value in jpeg_compression_QF_values:
+            for QF_value in reversed(jpeg_compression_QF_values):
                 watermarked_to_attack = watermarked_image.copy()
                 print(watermarked_to_attack.dtype)
                 attacked_image = jpeg_compression(watermarked_to_attack, QF_value)
@@ -488,11 +488,13 @@ def bf_attack(original_image, watermarked_image):
                 if watermark_status == 0:
                     if tmp_wpsnr >= 35.0:
                         successful_attacks.append(current_attack)
-                        if tmp_wpsnr > current_best_wpsnr:
-                            current_best_wpsnr = tmp_wpsnr
+                        #if tmp_wpsnr > current_best_wpsnr:
+                        #    current_best_wpsnr = tmp_wpsnr
+                        successful_attacks.append(current_attack)
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
-                        # plot_attack(original_image, watermarked_image, attacked_image)
+                        plot_attack(original_image, watermarked_image, attacked_image)
+                        break
                     else:
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -527,9 +529,11 @@ def bf_attack(original_image, watermarked_image):
                         successful_attacks.append(current_attack)
                         if tmp_wpsnr > current_best_wpsnr:
                             current_best_wpsnr = tmp_wpsnr
+                        successful_attacks.append(current_attack)
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
+                        break
                     else:
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -566,9 +570,11 @@ def bf_attack(original_image, watermarked_image):
                             successful_attacks.append(current_attack)
                             if tmp_wpsnr > current_best_wpsnr:
                                 current_best_wpsnr = tmp_wpsnr
+                            successful_attacks.append(current_attack)
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                             plot_attack(original_image, watermarked_image, attacked_image)
+                            # break
                         else:
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -604,9 +610,11 @@ def bf_attack(original_image, watermarked_image):
                             successful_attacks.append(current_attack)
                             if tmp_wpsnr > current_best_wpsnr:
                                 current_best_wpsnr = tmp_wpsnr
+                            successful_attacks.append(current_attack)
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                             plot_attack(original_image, watermarked_image, attacked_image)
+                            break
                         else:
                             print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                                   '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -677,6 +685,7 @@ def bf_attack(original_image, watermarked_image):
                         successful_attacks.append(current_attack)
                         if tmp_wpsnr > current_best_wpsnr:
                             current_best_wpsnr = tmp_wpsnr
+                        successful_attacks.append(current_attack)
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
@@ -706,6 +715,9 @@ plt.show()
 T = compute_thr(watermark_size, watermark)
 bf_attack(original_image, watermarked_image)
 #print_successful_attacks(successful_attacks)
+
+print("-------------- SUCCESSFUL ATTACKS --------------")
+print(successful_attacks)
 
 
 
