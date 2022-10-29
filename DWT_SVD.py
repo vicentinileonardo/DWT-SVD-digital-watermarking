@@ -1,4 +1,5 @@
 import time
+import random
 import cv2
 import os
 import numpy as np
@@ -76,8 +77,9 @@ def embedding(original_image):
         attacked_image_tmp = cv2.resize(attacked_image_tmp, (512, 512))
         blank_image += np.abs(attacked_image_tmp - original_image)
     #plot blank image
-    plt.imshow(blank_image, cmap='gray')
-    plt.show()
+    #plt.imshow(blank_image, cmap='gray')
+    #plt.show()
+
     # end time
     end = time.time()
     print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
@@ -366,13 +368,40 @@ def compute_thr(mark_size, w):  # w é il watermark originale
 
 #############   ROC     #############
 
-def compute_roc(original_image, watermarked_image, attacked_image, watermark_size, T):
+def random_attack(img):
+  i = random.randint(1,6)
+  if i==1:
+    attacked = awgn(img, 5.0, 123)
+  elif i==2:
+    attacked = blur(img, [3, 2])
+  elif i==3:
+    attacked = sharpening(img, 1, 1)
+  elif i==4:
+    attacked = median(img, [3, 5])
+  elif i==5:
+    attacked = resizing(img, 0.5)
+  elif i==6:
+    attacked = jpeg_compression(img, 75)
+  return attacked
+
+
+
+def compute_roc():
+    # start time
+    start = time.time()
     from sklearn.metrics import roc_curve, auc
 
-    # import an image
-    '''YOUR CODE'''
+    sample_images = []
+    # loop for importing images from sample-images folder
+    for filename in os.listdir('sample-images'):
+        if filename.endswith(".bmp"):
+            path_tmp = os.path.join('sample-images', filename)
+            sample_images.append(path_tmp)
+
     # generate your watermark (if it is necessary)
-    '''YOUR CODE'''
+    watermark_size = 1024
+    watermark_path = "howimetyourmark.npy"
+    watermark= np.load(watermark_path)
 
     # scores and labels are two lists we will use to append the values of similarity and their labels
     # In scores we will append the similarity between our watermarked image and the attacked one,
@@ -381,57 +410,66 @@ def compute_roc(original_image, watermarked_image, attacked_image, watermark_siz
     # and 0 otherwise
     scores = []
     labels = []
-    # Embed Watermark
-    '''YOUR CODE'''
 
-    sample = 0
-    while sample < 999:
-        # fakemark is the watermark for H0
-        fakemark = np.random.uniform(0.0, 1.0, mark_size)
-        fakemark = np.uint8(np.rint(fakemark))
-        # random attack to watermarked image (you can modify it)
-        res_att = random_attack(watermarked)
-        # extract attacked watermark
+    for i in range(0, len(sample_images)):
 
-        '''YOUR CODE'''
+        original_image = cv2.imread(sample_images[i], 0)
+        watermarked_image = embedding(original_image)
 
-        # compute similarity H1
-        scores.append(similarity(mark, w_ex))
-        labels.append(1)
-        # compute similarity H0
-        scores.append(similarity(fakemark, w_ex))
-        labels.append(0)
-        sample += 1
+        sample = 0
+        while sample <= 9:
+            # fakemark is the watermark for H0
+            fakemark = np.random.uniform(0.0, 1.0, watermark_size)
+            fakemark = np.uint8(np.rint(fakemark))
 
+            # random attack to watermarked image (you can modify it)
+            attacked_image = random_attack(watermarked_image)
 
-        # compute ROC
-        fpr, tpr, tau = roc_curve(np.asarray(labels), np.asarray(scores), drop_intermediate=False)
-        # compute AUC
-        roc_auc = auc(fpr, tpr)
+            # extract attacked watermark
+            w_ex_atk = extraction(original_image, watermarked_image, attacked_image)
 
-        plt.figure()
-        lw = 2
-        plt.plot(fpr,
-                 tpr,
-                 color='darkorange',
-                 lw=lw,
-                 label='AUC = %0.2f' % roc_auc)
-        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-        plt.xlim([-0.01, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic example')
-        plt.legend(loc="lower right")
-        plt.show()
+            # compute similarity H1
+            scores.append(similarity(watermark, w_ex_atk))
+            labels.append(1)
+            # compute similarity H0
+            scores.append(similarity(fakemark, w_ex_atk))
+            labels.append(0)
+            sample += 1
 
-        idx_tpr = np.where((fpr - 0.05) == min(i for i in (fpr - 0.05) if i > 0))
-        print('For a FPR approximately equals to 0.05 corresponds a TPR equals to %0.2f' % tpr[idx_tpr[0][0]])
-        print('For a FPR approximately equals to 0.05 corresponds a threshold equals to %0.2f' % tau[idx_tpr[0][0]])
-        print('Check FPR %0.2f' % fpr[idx_tpr[0][0]])
+    # print the scores and labels
+    print('Scores:', scores)
+    print('Labels:', labels)
 
 
+    # compute ROC
+    fpr, tpr, tau = roc_curve(np.asarray(labels), np.asarray(scores), drop_intermediate=False)
+    # compute AUC
+    roc_auc = auc(fpr, tpr)
 
+    plt.figure()
+    lw = 2
+    plt.plot(fpr,
+             tpr,
+             color='darkorange',
+             lw=lw,
+             label='AUC = %0.2f' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([-0.01, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    idx_tpr = np.where((fpr - 0.05) == min(i for i in (fpr - 0.05) if i > 0))
+    print('For a FPR approximately equals to 0.05 corresponds a TPR equals to %0.2f' % tpr[idx_tpr[0][0]])
+    print('For a FPR approximately equals to 0.05 corresponds a threshold equals to %0.2f' % tau[idx_tpr[0][0]])
+    print('Check FPR %0.2f' % fpr[idx_tpr[0][0]])
+
+    # end time
+    end = time.time()
+    print('[COMPUTE ROC] Time: %0.2f seconds' % (end - start))
 
 
 
@@ -512,6 +550,14 @@ def sharpening(img, sigma, alpha):
 def median(img, kernel_size):
     attacked = medfilt(img, kernel_size)
     return attacked
+
+def resizing(img, scale):
+  from skimage.transform import rescale
+  x, y = img.shape
+  attacked = rescale(img, scale)
+  attacked = rescale(attacked, 1/scale)
+  attacked = attacked[:x, :y]
+  return attacked
 
 def plot_attack(original_image, watermarked_image, attacked_image):
     plt.figure(figsize=(15, 6))
@@ -798,13 +844,15 @@ plt.imshow(watermarked_image, cmap='gray')
 plt.show()
 
 T = compute_thr(watermark_size, watermark)
-bf_attack(original_image, watermarked_image)
+#bf_attack(original_image, watermarked_image)
 
 
-print("-------------- SUCCESSFUL ATTACKS --------------")
-print(successful_attacks)
-print("------------")
-print_successful_attacks(successful_attacks)
+#print("-------------- SUCCESSFUL ATTACKS --------------")
+#print(successful_attacks)
+#print("------------")
+#print_successful_attacks(successful_attacks)
+
+compute_roc()
 
 
 
