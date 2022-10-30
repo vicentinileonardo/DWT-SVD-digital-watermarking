@@ -23,17 +23,20 @@ import math
 # - Change number of watermarks concatenated to embed
 
 '''PARAMETERS'''
-alpha = 12  # 8 is the lower limit that can be used
-n_blocks_to_embed = 1024
-block_size = 4
-#spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
-spatial_function = 'mean'
-spatial_weight = 0.65 # 0: no spatial domain, 1: only spatial domain
-attack_weight = 1.0 - spatial_weight
+
 
 
 '''EMBEDDING'''
 def embedding(original_image):
+
+    alpha = 12  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 1024
+    block_size = 4
+    # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
+    spatial_function = 'average'
+    spatial_weight = 0.5  # 0: no spatial domain, 1: only spatial domain
+    attack_weight = 1.0 - spatial_weight
+
     watermark_size = 1024
     watermark_path = "howimetyourmark.npy"
     watermark_to_embed = np.load(watermark_path)
@@ -44,10 +47,10 @@ def embedding(original_image):
 
     start = time.time()
 
-    QF = [5,6, 7, 8,9, 10]
-    for qf in QF:
-        attacked_image_tmp = jpeg_compression(original_image, qf)
-        blank_image += np.abs(attacked_image_tmp - original_image)
+    #QF = [5,6, 7, 8,9, 10]
+    #for qf in QF:
+    #    attacked_image_tmp = jpeg_compression(original_image, qf)
+     #   blank_image += np.abs(attacked_image_tmp - original_image)
 
     blur_sigma_values = [0.1, 0.5, 1, 2, [1, 1], [2, 1]]
     for sigma in blur_sigma_values:
@@ -82,8 +85,8 @@ def embedding(original_image):
 
     # end time
     end = time.time()
-    print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
-    print('[EMBEDDING] Spatial function:', spatial_function)
+    #print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
+    #print('[EMBEDDING] Spatial function:', spatial_function)
 
 
     # find the min blocks (sum or mean of the 64 elements for each block) using sorting (min is best)
@@ -91,18 +94,19 @@ def embedding(original_image):
     for i in range(0, original_image.shape[0], block_size):
         for j in range(0, original_image.shape[1], block_size):
 
-            if spatial_function == 'average':
-                spatial_value = np.average(original_image[i:i + block_size, j:j + block_size])
-            elif spatial_function == 'median':
-                spatial_value = np.median(original_image[i:i + block_size, j:j + block_size])
-            elif spatial_function == 'mean':
-                spatial_value = np.mean(original_image[i:i + block_size, j:j + block_size])
+            if np.mean(original_image[i:i + block_size, j:j + block_size]) < 230 and np.mean(original_image[i:i + block_size, j:j + block_size]) > 10:
+                if spatial_function == 'average':
+                    spatial_value = np.average(original_image[i:i + block_size, j:j + block_size])
+                elif spatial_function == 'median':
+                    spatial_value = np.median(original_image[i:i + block_size, j:j + block_size])
+                elif spatial_function == 'mean':
+                    spatial_value = np.mean(original_image[i:i + block_size, j:j + block_size])
 
-            block_tmp = {'locations': (i, j),
-                         'spatial_value': spatial_value,
-                         'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size])
-                         }
-            blocks_to_watermark.append(block_tmp)
+                block_tmp = {'locations': (i, j),
+                             'spatial_value': spatial_value,
+                             'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size])
+                             }
+                blocks_to_watermark.append(block_tmp)
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['spatial_value'], reverse=True)
     for i in range(len(blocks_to_watermark)):
@@ -171,17 +175,29 @@ def embedding(original_image):
     watermarked_image += np.uint8(blank_image)
 
     # Compute quality
-    w = wpsnr(original_image, watermarked_image)
-    print('[EMBEDDING] wPSNR: %.2fdB' % w)
+    #w = wpsnr(original_image, watermarked_image)
+    #print('[EMBEDDING] wPSNR: %.2fdB' % w)
 
     return watermarked_image
 
 
 '''DETECTION'''
-def detection(original_image, watermarked_image, attacked_image):
-    watermark_size = 1024
+def detection(input1, input2, input3):
+
+    original_image = input1
+    watermarked_image = input2
+    attacked_image = input3
+
     # start time
-    start = time.time()
+    #start = time.time()
+
+    alpha = 12  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 1024
+    block_size = 4
+    watermark_size = 1024
+    T = 15.86
+
+
     #extract watermark from watermarked image
     watermarked_image_dummy = watermarked_image.copy()
     watermark_extracted_wm = extraction(original_image, watermarked_image, watermarked_image_dummy)
@@ -252,15 +268,24 @@ def detection(original_image, watermarked_image, attacked_image):
     output2 = wpsnr(watermarked_image, attacked_image)
 
     # end time
-    end = time.time()
-    print('[DETECTION] Time: %.2fs' % (end - start))
+    #end = time.time()
+    #print('[DETECTION] Time: %.2fs' % (end - start))
 
     return output1, output2
 
-def extraction(original_image, watermarked_image, attacked_image):
+def extraction(input1, input2, input3):
+
+    original_image = input1
+    watermarked_image = input2
+    attacked_image = input3
+
+    alpha = 12  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 1024
+    block_size = 4
     watermark_size = 1024
+
     # start time
-    start = time.time()
+    #start = time.time()
 
     blocks_with_watermark = []
     divisions = original_image.shape[0] / block_size
@@ -318,10 +343,85 @@ def extraction(original_image, watermarked_image, attacked_image):
 ####################################################################################################################
 
     #end time
-    end = time.time()
-    print('[EXTRACTION] Time: %.2fs' % (end - start))
+    #end = time.time()
+    #print('[EXTRACTION] Time: %.2fs' % (end - start))
 
     return watermark_extracted
+
+
+def test_detection(original_image, watermarked_image):
+    original = original_image
+    watermarked = watermarked_image
+
+    # 1. TIME REQUIREMENT: the detection should run in < 5 seconds
+    start_time = time.time()
+    tr, w = detection(original, watermarked, watermarked)
+    end_time = time.time()
+    if (end_time - start_time) > 5:
+        print('ERROR! Takes too much to run: ' + str(end_time - start_time))
+    else:
+        print('OK 1 time requirement')
+
+    # 2. THE WATERMARK MUST BE FOUND IN THE WATERMARKED IMAGE
+    if tr == 0:
+        print('ERROR! Watermark not found in watermarked image')
+    else:
+        print('OK 2 watermark in watermarked')
+
+    # 3. THE WATERMARK MUST NOT BE FOUND IN ORIGINAL
+    tr, w = detection(original, watermarked, original)
+    if tr == 1:
+        print('ERROR! Watermark found in original')
+    else:
+        print('OK 3 watermark not found in the original image')
+
+    # 4. CHECK DESTROYED IMAGES
+    img = watermarked.copy()
+    attacked = []
+    c = 0
+    ws = []
+
+    attacked.append(blur(img, 15))
+    attacked.append(awgn(img, 50, 123))
+    #attacked.append(resizing(img, 0.1))
+
+    for i, a in enumerate(attacked):
+        aName = 'attacked-%d.bmp' % i
+        cv2.imwrite(aName, a)
+        tr, w = detection(original, watermarked, a)
+        if tr == 1:
+            c += 1
+            ws.append(w)
+    if c > 0:
+        print('ERROR! Watermark found in %d destroyed images with ws %s' % (c, str(ws)))
+    else:
+        print('OK 4 watermark not found in destroyed images')
+
+    # 5. CHECK UNRELATED IMAGES
+    files = [os.path.join('TESTImages', f) for f in os.listdir('TESTImages')]
+    c = 0
+    for f in files:
+        unr = cv2.imread(f, 0)
+        tr, w = detection(original, watermarked, unr)
+        if tr == 1:
+            c += 1
+    if c > 0:
+        print('ERROR! Watermark found in %d unrelated images' % c)
+    else:
+        print('OK 5 watermark not found in unrelated images')
+
+
+# Please, also check that the mark you extract from the watermarked image is consistent with the one given using this function
+
+def check_mark(X, X_star):
+  X_star = np.rint(abs(X_star)).astype(int)
+  res = [1 for a, b in zip(X, X_star) if a==b]
+  if sum(res) != 1024:
+    print('The marks are different, please check your code')
+  print(sum(res))
+
+
+
 
 
 '''UTILITY'''
@@ -398,6 +498,8 @@ def compute_roc():
             path_tmp = os.path.join('sample-images', filename)
             sample_images.append(path_tmp)
 
+    sample_images.sort()
+
     # generate your watermark (if it is necessary)
     watermark_size = 1024
     watermark_path = "howimetyourmark.npy"
@@ -415,6 +517,16 @@ def compute_roc():
 
         original_image = cv2.imread(sample_images[i], 0)
         watermarked_image = embedding(original_image)
+
+        print(sample_images[i])
+        #plot original and watermarked image
+        plt.subplot(1, 2, 1)
+        plt.imshow(original_image, cmap='gray')
+        plt.title('Original image')
+        plt.subplot(1, 2, 2)
+        plt.imshow(watermarked_image, cmap='gray')
+        plt.title('Watermarked image')
+        plt.show()
 
         sample = 0
         while sample <= 9:
@@ -462,7 +574,7 @@ def compute_roc():
     plt.legend(loc="lower right")
     plt.show()
 
-    idx_tpr = np.where((fpr - 0.05) == min(i for i in (fpr - 0.05) if i > 0))
+    idx_tpr = np.where((fpr - 0.09) == min(i for i in (fpr - 0.09) if i > 0))
     print('For a FPR approximately equals to 0.05 corresponds a TPR equals to %0.2f' % tpr[idx_tpr[0][0]])
     print('For a FPR approximately equals to 0.05 corresponds a threshold equals to %0.2f' % tau[idx_tpr[0][0]])
     print('Check FPR %0.2f' % fpr[idx_tpr[0][0]])
@@ -626,7 +738,7 @@ def bf_attack(original_image, watermarked_image):
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
-                        break
+                        #break
                     else:
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -664,7 +776,7 @@ def bf_attack(original_image, watermarked_image):
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - !!!SUCCESS!!!')
                         plot_attack(original_image, watermarked_image, attacked_image)
-                        break
+                        #break
                     else:
                         print('[' + str(current_attack) + ']', 'SIM = %f' % sim,
                               '[watermark_status = ' + str(watermark_status) + '] - FAILED')
@@ -827,13 +939,21 @@ def bf_attack(original_image, watermarked_image):
 '''MAIN CODE'''
 np.set_printoptions(threshold=np.inf)
 watermark_size = 1024
-original_image_path = "images/lena.bmp"
+original_image_path = "images/bridge.tif"
 original_image = cv2.imread(original_image_path, 0)
 
 watermarked_image = embedding(original_image)
 
 watermarked_image_dummy = watermarked_image.copy()
 watermark = extraction(original_image, watermarked_image, watermarked_image_dummy)
+
+#watermark_extracted[abs(watermark_extracted) >= 0.5] = 1
+#watermark_extracted[abs(watermark_extracted) < 0.5] = 0
+
+watermark_path = "howimetyourmark.npy"
+watermark_to_embed = np.load(watermark_path)
+
+print(watermark_to_embed - watermark)
 
 plt.subplot(121)
 plt.title('Original')
@@ -843,7 +963,7 @@ plt.title('Watermarked')
 plt.imshow(watermarked_image, cmap='gray')
 plt.show()
 
-T = compute_thr(watermark_size, watermark)
+T = 15.86
 #bf_attack(original_image, watermarked_image)
 
 
@@ -854,6 +974,11 @@ T = compute_thr(watermark_size, watermark)
 
 compute_roc()
 
+
+
+
+#test_detection(original_image, watermarked_image)
+#check_mark(watermark_to_embed, watermark)
 
 
 
