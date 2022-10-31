@@ -66,7 +66,9 @@ def random_attack(img):
     attacked = jpeg_compression(img, 75)
   return attacked
 
-def embedding(original_image):
+def embedding(original_image, watermark_path="howimetyourmark.npy" ):
+
+    original_image = cv2.imread(original_image, 0)
 
     alpha = 12  # 8 is the lower limit that can be used
     n_blocks_to_embed = 1024
@@ -77,7 +79,6 @@ def embedding(original_image):
     attack_weight = 1.0 - spatial_weight
 
     watermark_size = 1024
-    watermark_path = "howimetyourmark.npy"
     watermark_to_embed = np.load(watermark_path)
 
     blocks_to_watermark = []
@@ -301,9 +302,9 @@ def compute_roc():
 
     sample_images = []
     # loop for importing images from sample-images folder
-    for filename in os.listdir('sample-images'):
+    for filename in os.listdir('../sample-images'):
         if filename.endswith(".bmp"):
-            path_tmp = os.path.join('sample-images', filename)
+            path_tmp = os.path.join('../sample-images', filename)
             sample_images.append(path_tmp)
 
     sample_images.sort()
@@ -311,7 +312,7 @@ def compute_roc():
     # generate your watermark (if it is necessary)
     watermark_size = 1024
     watermark_path = "howimetyourmark.npy"
-    watermark= np.load(watermark_path)
+    watermark = np.load(watermark_path)
 
     # scores and labels are two lists we will use to append the values of similarity and their labels
     # In scores we will append the similarity between our watermarked image and the attacked one,
@@ -323,9 +324,10 @@ def compute_roc():
 
     for i in range(0, len(sample_images)):
 
-        original_image = cv2.imread(sample_images[i], 0)
-        watermarked_image = embedding(original_image)
+        original_image = sample_images[i]
+        watermarked_image = embedding(original_image, watermark_path)
 
+        original_image = cv2.imread(original_image, 0)
         print(sample_images[i])
         #plot original and watermarked image
         plt.subplot(1, 2, 1)
@@ -390,5 +392,7 @@ def compute_roc():
     # end time
     end = time.time()
     print('[COMPUTE ROC] Time: %0.2f seconds' % (end - start))
+
+compute_roc()
 
 

@@ -107,9 +107,9 @@ def extraction(input1, input2, input3):
 
 def detection(input1, input2, input3):
 
-    original_image = input1
-    watermarked_image = input2
-    attacked_image = input3
+    original_image = cv2.imread(input1, 0)
+    watermarked_image = cv2.imread(input2, 0)
+    attacked_image = cv2.imread(input3, 0)
 
     # start time
     #start = time.time()

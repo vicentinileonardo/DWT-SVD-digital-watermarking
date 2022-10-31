@@ -46,7 +46,13 @@ def resizing(img, scale):
   attacked = attacked[:x, :y]
   return attacked
 
-def embedding(original_image):
+def embedding(original_image, watermark_path="howimetyourmark.npy" ):
+
+    original_image = cv2.imread(original_image, 0)
+
+    watermark_size = 1024
+    watermark_to_embed = np.load(watermark_path)
+
 
     alpha = 12  # 8 is the lower limit that can be used
     n_blocks_to_embed = 1024
@@ -56,9 +62,7 @@ def embedding(original_image):
     spatial_weight = 0.5  # 0: no spatial domain, 1: only spatial domain
     attack_weight = 1.0 - spatial_weight
 
-    watermark_size = 1024
-    watermark_path = "howimetyourmark.npy"
-    watermark_to_embed = np.load(watermark_path)
+
 
     blocks_to_watermark = []
 
