@@ -12,6 +12,90 @@ from scipy.signal import medfilt
 
 # Embedding strategy: DWT-SVD with local selection of blocks based on a spatial function and attacks
 
+def edge_detection(original_image='../images/lena.bmp'):
+
+    image = cv2.imread(original_image, 0)
+    plt.imshow(image, cmap='gray')
+    plt.title('Original Image')
+    plt.show()
+
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    plt.imshow(blurred, cmap='gray')
+    plt.title('Blurred Image')
+    plt.show()
+
+    edged = cv2.Canny(blurred, 30, 150)
+    plt.imshow(edged, cmap='gray')
+    plt.title('Edged Image')
+    plt.show()
+
+    # threshold the image by setting all pixel values less than 225
+    # to 255 (white; foreground) and all pixel values >= 225 to 255
+    # (black; background), thereby segmenting the image
+    thresh = cv2.threshold(edged, 225, 255, cv2.THRESH_BINARY_INV)[1]
+    plt.imshow(thresh, cmap='gray')
+    plt.title('Thresholded Image')
+    plt.show()
+
+
+    block_size = 4
+    edge_mask = np.zeros((512, 512))
+
+    for i in range(0, image.shape[0], block_size):
+        for j in range(0, image.shape[1], block_size):
+            #avg_array.append(np.average(thresh[i:i + block_size, j:j + block_size]))
+            surrounding_blocks_avgs = []
+            thresh[i:i + block_size, j:j + block_size]
+            if i - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j:j + block_size])) # top
+            if i + block_size < image.shape[0]:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j:j + block_size])) # bottom
+            if j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i:i + block_size, j - block_size:j])) # left
+            if j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i:i + block_size, j + block_size:j + 2 * block_size])) # right
+            if i - block_size >= 0 and j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j - block_size:j])) # top left
+            if i - block_size >= 0 and j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j + block_size:j + 2 * block_size])) # top right
+            if i + block_size < image.shape[0] and j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j - block_size:j])) # bottom left
+            if i + block_size < image.shape[0] and j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j + block_size:j + 2 * block_size])) # bottom right
+
+            surrounding_blocks_avgs = np.array(surrounding_blocks_avgs)
+
+            #if block is not an edge, so white and surrounded by blacks then can be chosen
+            if np.average(thresh[i:i + block_size, j:j + block_size]) == 255 and np.average(surrounding_blocks_avgs) < 200:
+                edge_mask[i:i + block_size, j:j + block_size] = 0
+            else:
+                edge_mask[i:i + block_size, j:j + block_size] = 1
+
+    plt.imshow(edge_mask, cmap='gray')
+    plt.title('Edge Mask')
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def jpeg_compression(img, QF):
     cv2.imwrite('tmp.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), QF])
     attacked = cv2.imread('tmp.jpg', 0)
@@ -203,3 +287,5 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
 
     return watermarked_image
 
+np.set_printoptions(threshold=np.inf)
+edge_detection()
