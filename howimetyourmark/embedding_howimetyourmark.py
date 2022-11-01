@@ -12,34 +12,53 @@ from scipy.signal import medfilt
 
 # Embedding strategy: DWT-SVD with local selection of blocks based on a spatial function and attacks
 
-def edge_detection(original_image='../images/lena.bmp'):
+def wpsnr(img1, img2):
+    img1 = np.float32(img1) / 255.0
+    img2 = np.float32(img2) / 255.0
 
-    image = cv2.imread(original_image, 0)
-    plt.imshow(image, cmap='gray')
-    plt.title('Original Image')
-    plt.show()
+    difference = img1 - img2
+    same = not np.any(difference)
+    if same is True:
+        return 9999999
+    csf = np.genfromtxt('utility/csf.csv', delimiter=',')
+    ew = convolve2d(difference, np.rot90(csf, 2), mode='valid')
+    decibels = 20.0 * np.log10(1.0 / sqrt(np.mean(np.mean(ew ** 2))))
+    return decibels
+
+
+def edge_detection(original_image):
+
+    image = original_image
+    #image = cv2.imread(original_image, 0)
+
+    block_size = 2
+
+    #plt.imshow(image, cmap='gray')
+    #plt.title('Original Image')
+    #plt.show()
 
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
-    plt.imshow(blurred, cmap='gray')
-    plt.title('Blurred Image')
-    plt.show()
+    #plt.imshow(blurred, cmap='gray')
+    #plt.title('Blurred Image')
+    #plt.show()
 
     edged = cv2.Canny(blurred, 30, 150)
-    plt.imshow(edged, cmap='gray')
-    plt.title('Edged Image')
-    plt.show()
+    #plt.imshow(edged, cmap='gray')
+    #plt.title('Edged Image')
+    #plt.show()
 
     # threshold the image by setting all pixel values less than 225
     # to 255 (white; foreground) and all pixel values >= 225 to 255
     # (black; background), thereby segmenting the image
     thresh = cv2.threshold(edged, 225, 255, cv2.THRESH_BINARY_INV)[1]
-    plt.imshow(thresh, cmap='gray')
-    plt.title('Thresholded Image')
-    plt.show()
+    #plt.imshow(thresh, cmap='gray')
+    #plt.title('Thresholded Image')
+    #plt.show()
 
 
-    block_size = 4
+
     edge_mask = np.zeros((512, 512))
+    edge_detection_values = np.zeros((512, 512))
 
     for i in range(0, image.shape[0], block_size):
         for j in range(0, image.shape[1], block_size):
@@ -68,33 +87,21 @@ def edge_detection(original_image='../images/lena.bmp'):
             #if block is not an edge, so white and surrounded by blacks then can be chosen
             if np.average(thresh[i:i + block_size, j:j + block_size]) == 255 and np.average(surrounding_blocks_avgs) < 200:
                 edge_mask[i:i + block_size, j:j + block_size] = 0
+                edge_detection_values[i:i + block_size, j:j + block_size] = np.average(surrounding_blocks_avgs)
             else:
                 edge_mask[i:i + block_size, j:j + block_size] = 1
-
-    plt.imshow(edge_mask, cmap='gray')
-    plt.title('Edge Mask')
-    plt.show()
+                edge_detection_values[i:i + block_size, j:j + block_size] = 255
 
 
+    #plt.imshow(edge_mask, cmap='gray')
+    #plt.title('Edge Mask')
+    #plt.show()
 
+    #plt.imshow(edge_detection_values, cmap='gray')
+    #plt.title('Edge Detection Values')
+    #plt.show()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return edge_detection_values
 
 def jpeg_compression(img, QF):
     cv2.imwrite('tmp.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), QF])
@@ -143,8 +150,10 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     block_size = 4
     # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
     spatial_function = 'average'
-    spatial_weight = 0.5  # 0: no spatial domain, 1: only spatial domain
-    attack_weight = 1.0 - spatial_weight
+
+    spatial_weight = 0.23  # 0: no spatial domain, 1: only spatial domain
+    edge_detection_weight = 0.32
+    attack_weight = 1.0 - spatial_weight - edge_detection_weight
 
 
 
@@ -195,8 +204,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     #print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
     #print('[EMBEDDING] Spatial function:', spatial_function)
 
-
-    # find the min blocks (sum or mean of the 64 elements for each block) using sorting (min is best)
+    edge_detection_values = edge_detection(original_image)
 
     for i in range(0, original_image.shape[0], block_size):
         for j in range(0, original_image.shape[1], block_size):
@@ -211,7 +219,8 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
 
                 block_tmp = {'locations': (i, j),
                              'spatial_value': spatial_value,
-                             'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size])
+                             'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size]),
+                             'edge_detection_value': np.average(edge_detection_values[i:i + block_size, j:j + block_size])
                              }
                 blocks_to_watermark.append(block_tmp)
 
@@ -223,7 +232,14 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     for i in range(len(blocks_to_watermark)):
         blocks_to_watermark[i]['merit'] += i*attack_weight
 
+    blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['edge_detection_value'], reverse=True)
+    for i in range(len(blocks_to_watermark)):
+        blocks_to_watermark[i]['merit'] += i*edge_detection_weight
+
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['merit'], reverse=True)
+
+
+    # blocks_to_watermark = blocks_to_watermark[:n_blocks_to_embed]
 
     blank_image = np.float64(np.zeros((512, 512)))
 
@@ -235,6 +251,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
         tmp['locations'][1]:tmp['locations'][1] + block_size] = 1
 
     blocks_to_watermark_final = sorted(blocks_to_watermark_final, key=lambda k: k['locations'], reverse=False)
+    #print(blocks_to_watermark_final)
 
 ####################################################################################################################
 
@@ -282,10 +299,10 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermarked_image += np.uint8(blank_image)
 
     # Compute quality
-    #w = wpsnr(original_image, watermarked_image)
-    #print('[EMBEDDING] wPSNR: %.2fdB' % w)
+    w = wpsnr(original_image, watermarked_image)
+    print('[EMBEDDING] wPSNR: %.2fdB' % w)
 
     return watermarked_image
 
 np.set_printoptions(threshold=np.inf)
-edge_detection()
+
