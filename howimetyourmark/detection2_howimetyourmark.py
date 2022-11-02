@@ -93,7 +93,9 @@ def extraction(input1, input2, input3):
         # SVD
         Uc_ori, Sc_ori, Vc_ori = np.linalg.svd(LL_ori)
 
+        Udiff = (Uc - Uc_ori)/alpha
         Sdiff = (Sc - Sc_ori)/alpha
+        Vdiff = (Vc - Vc_ori)/alpha
 
         #Sdiff = Sc_ori-Sc
 
@@ -104,6 +106,7 @@ def extraction(input1, input2, input3):
 
         wm_block = (Udiff).dot(np.diag(Sdiff)).dot(Vdiff) #se mai aggiungere T a vdiff
 
+        print(wm_block)
         #block_limit = np.uint16(watermark_size/n_blocks_to_embed)
         #for px in range(0,block_limit):
         #    watermark_extracted[px + i * block_limit] = Sdiff[px]/ alpha

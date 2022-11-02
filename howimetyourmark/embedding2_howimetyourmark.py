@@ -151,8 +151,8 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
     spatial_function = 'average'
 
-    spatial_weight = 0.5  # 0: no spatial domain, 1: only spatial domain
-    edge_detection_weight = 0.0
+    spatial_weight = 0.0  # 0: no spatial domain, 1: only spatial domain
+    edge_detection_weight = 1
     attack_weight = 1.0 - spatial_weight - edge_detection_weight
 
 
@@ -269,47 +269,16 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
         x = np.uint16(blocks_to_watermark_final[i]['locations'][0])
         y = np.uint16(blocks_to_watermark_final[i]['locations'][1])
 
-        #get the block from the original image
-        block = original_image[x:x + block_size, y:y + block_size]
-        #compute the LL of the block
-        Coefficients = pywt.wavedec2(block, wavelet='haar', level=1)
-        LL_tmp = Coefficients[0]
-
-        shape_LL_tmp = LL_tmp.shape[0]
-
-        x_w = np.uint16((i%(watermark_to_embed.shape[0]/shape_LL_tmp))*shape_LL_tmp)
-        y_w = np.uint16(((i//(watermark_to_embed.shape[0]/shape_LL_tmp))*shape_LL_tmp)%32)
-
-        #print (x_w, y_w, i)
-
-
-        wm_block = watermark_to_embed[x_w:x_w + shape_LL_tmp, y_w:y_w + shape_LL_tmp]
-
-        Uwm, Swm, Vwm = np.linalg.svd(wm_block)
-
-        # SVD
-        Uc, Sc, Vc = np.linalg.svd(LL_tmp)
-        Sw = Sc.copy()
-        Uw = Uc.copy()
-        Vw = Vc.copy()
-
-
-        '''
-        # embedding
-        for px in range(0, np.uint16(watermark_size/n_blocks_to_embed)):
-            if watermark_to_embed[np.uint16(px + (i * np.uint16(watermark_size/n_blocks_to_embed)))] == 1:
-                Sw[px] += alpha
-        '''
-        #print('Sw:', Sw, 'SWM', Swm)
 
         Sw = Sw + alpha*Swm
+        Uw = Uw + alpha*Uwm
+        Vw = Vw + alpha*Vwm
 
         LL_new = np.zeros((shape_LL_tmp, shape_LL_tmp))
 
         #LL_new = (Uc).dot(np.diag(Sw)).dot(Vc)
-        LL_new = (Uc).dot(np.diag(Sw)).dot(Vc)
-        print('Block:' , wm_block)
-        print('Svd:' , Vwm)
+        LL_new = (Uw).dot(np.diag(Sw)).dot(Vw)
+
         #compute the new block
         Coefficients[0] = LL_new
         block_new = pywt.waverec2(Coefficients, wavelet='haar')

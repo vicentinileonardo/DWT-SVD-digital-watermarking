@@ -21,27 +21,115 @@ import math
 # - Change block size
 # - Change number of watermarks concatenated to embed
 
+def edge_detection(original_image):
 
-alpha = 5
+    image = original_image
+    #image = cv2.imread(original_image, 0)
 
-def embedding(original_image, watermark):
-    n_blocks_to_embed = 512
-    block_size = 8
+    block_size = 4
+
+    plt.imshow(image, cmap='gray')
+    plt.title('Original Image')
+    plt.show()
+
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    plt.imshow(blurred, cmap='gray')
+    plt.title('Blurred Image')
+    plt.show()
+
+    edged = cv2.Canny(blurred, 30, 150)
+    plt.imshow(edged, cmap='gray')
+    plt.title('Edged Image')
+    plt.show()
+
+    # threshold the image by setting all pixel values less than 225
+    # to 255 (white; foreground) and all pixel values >= 225 to 255
+    # (black; background), thereby segmenting the image
+    thresh = cv2.threshold(edged, 225, 255, cv2.THRESH_BINARY_INV)[1]
+    plt.imshow(thresh, cmap='gray')
+    plt.title('Thresholded Image')
+    plt.show()
+
+
+
+    edge_mask = np.zeros((512, 512))
+    edge_detection_values = np.zeros((512, 512))
+
+    for i in range(0, image.shape[0], block_size):
+        for j in range(0, image.shape[1], block_size):
+            #avg_array.append(np.average(thresh[i:i + block_size, j:j + block_size]))
+            surrounding_blocks_avgs = []
+            thresh[i:i + block_size, j:j + block_size]
+            if i - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j:j + block_size])) # top
+            if i + block_size < image.shape[0]:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j:j + block_size])) # bottom
+            if j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i:i + block_size, j - block_size:j])) # left
+            if j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i:i + block_size, j + block_size:j + 2 * block_size])) # right
+            if i - block_size >= 0 and j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j - block_size:j])) # top left
+            if i - block_size >= 0 and j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i - block_size:i, j + block_size:j + 2 * block_size])) # top right
+            if i + block_size < image.shape[0] and j - block_size >= 0:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j - block_size:j])) # bottom left
+            if i + block_size < image.shape[0] and j + block_size < image.shape[1]:
+                surrounding_blocks_avgs.append(np.average(thresh[i + block_size:i + 2 * block_size, j + block_size:j + 2 * block_size])) # bottom right
+
+            surrounding_blocks_avgs = np.array(surrounding_blocks_avgs)
+
+            #if block is not an edge, so white and surrounded by blacks then can be chosen
+            if np.average(thresh[i:i + block_size, j:j + block_size]) == 255 and np.average(surrounding_blocks_avgs) < 200:
+                edge_mask[i:i + block_size, j:j + block_size] = 0
+                edge_detection_values[i:i + block_size, j:j + block_size] = np.average(surrounding_blocks_avgs)
+            else:
+                edge_mask[i:i + block_size, j:j + block_size] = 1
+                edge_detection_values[i:i + block_size, j:j + block_size] = 255
+
+
+    plt.imshow(edge_mask, cmap='gray')
+    plt.title('Edge Mask')
+    plt.show()
+
+    plt.imshow(edge_detection_values, cmap='gray')
+    plt.title('Edge Detection Values')
+    plt.show()
+
+    return edge_detection_values
+
+
+
+def embedding(original_image, watermark_path="howimetyourmark.npy"):
+
+    original_image = cv2.imread(original_image, 0)
+
+    watermark_size = 1024
+    watermark_to_embed = np.load(watermark_path)
+
+
+    alpha = 1  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 1024
+    block_size = 4
+    # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
+    spatial_function = 'average'
+
+    spatial_weight = 0.0  # 0: no spatial domain, 1: only spatial domain
+    edge_detection_weight = 1
+    attack_weight = 1.0 - spatial_weight - edge_detection_weight
+
     blocks_to_watermark = []
 
     blank_image = np.float64(np.zeros((512, 512)))
 
     start = time.time()
 
-    QF = [5, 7, 8, 10, 15]
-    for qf in QF:
-        attacked_image_tmp = jpeg_compression(original_image, qf)
-        blank_image += np.abs(attacked_image_tmp - original_image)
+    # QF = [5,6, 7, 8,9, 10]
+    # for qf in QF:
+    #    attacked_image_tmp = jpeg_compression(original_image, qf)
+    #   blank_image += np.abs(attacked_image_tmp - original_image)
 
-    blur_sigma_values = [0.1, 0.5,
-                         1, 2,
-                         [1, 1], [2, 1]
-                         ]
+    blur_sigma_values = [0.1, 0.5, 1, 2, [1, 1], [2, 1]]
     for sigma in blur_sigma_values:
         attacked_image_tmp = blur(original_image, sigma)
         blank_image += np.abs(attacked_image_tmp - original_image)
@@ -68,35 +156,52 @@ def embedding(original_image, watermark):
         attacked_image_tmp = cv2.resize(original_image, (0, 0), fx=scale, fy=scale)
         attacked_image_tmp = cv2.resize(attacked_image_tmp, (512, 512))
         blank_image += np.abs(attacked_image_tmp - original_image)
-
     # plot blank image
-    plt.imshow(blank_image, cmap='gray')
-    plt.show()
+    # plt.imshow(blank_image, cmap='gray')
+    # plt.show()
 
     # end time
     end = time.time()
-    print("Time: " + str(end - start))
+    # print("[EMBEDDING] Time of attacks for embedding: " + str(end - start))
+    # print('[EMBEDDING] Spatial function:', spatial_function)
 
-    # find the min blocks (sum or mean of the 64 elements for each block) using sorting (min is best)
+    edge_detection_values = edge_detection(original_image)
 
     for i in range(0, original_image.shape[0], block_size):
         for j in range(0, original_image.shape[1], block_size):
-            block_tmp = {'locations': (i, j),
-                         'spatial_value': np.average(original_image[i:i + block_size, j:j + block_size]),
-                         'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size])
-                         }
-            blocks_to_watermark.append(block_tmp)
+
+            if np.mean(original_image[i:i + block_size, j:j + block_size]) < 230 and np.mean(
+                    original_image[i:i + block_size, j:j + block_size]) > 10:
+                if spatial_function == 'average':
+                    spatial_value = np.average(original_image[i:i + block_size, j:j + block_size])
+                elif spatial_function == 'median':
+                    spatial_value = np.median(original_image[i:i + block_size, j:j + block_size])
+                elif spatial_function == 'mean':
+                    spatial_value = np.mean(original_image[i:i + block_size, j:j + block_size])
+
+                block_tmp = {'locations': (i, j),
+                             'spatial_value': spatial_value,
+                             'attack_value': np.average(blank_image[i:i + block_size, j:j + block_size]),
+                             'edge_detection_value': np.average(
+                                 edge_detection_values[i:i + block_size, j:j + block_size])
+                             }
+                blocks_to_watermark.append(block_tmp)
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['spatial_value'], reverse=True)
-    #print('Blocks to watermark: ' + str(len(blocks_to_watermark)))
     for i in range(len(blocks_to_watermark)):
-        blocks_to_watermark[i]['merit'] = i
+        blocks_to_watermark[i]['merit'] = i * spatial_weight
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['attack_value'], reverse=False)
     for i in range(len(blocks_to_watermark)):
-        blocks_to_watermark[i]['merit'] += i
+        blocks_to_watermark[i]['merit'] += i * attack_weight
+
+    blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['edge_detection_value'], reverse=True)
+    for i in range(len(blocks_to_watermark)):
+        blocks_to_watermark[i]['merit'] += i * edge_detection_weight
 
     blocks_to_watermark = sorted(blocks_to_watermark, key=lambda k: k['merit'], reverse=True)
+
+    # blocks_to_watermark = blocks_to_watermark[:n_blocks_to_embed]
 
     blank_image = np.float64(np.zeros((512, 512)))
 
@@ -107,16 +212,13 @@ def embedding(original_image, watermark):
         blank_image[tmp['locations'][0]:tmp['locations'][0] + block_size,
         tmp['locations'][1]:tmp['locations'][1] + block_size] = 1
 
-    # plot blank image
-    plt.imshow(blank_image, cmap='gray')
-    plt.show()
-
     blocks_to_watermark_final = sorted(blocks_to_watermark_final, key=lambda k: k['locations'], reverse=False)
-    #print(blocks_to_watermark_final)
+    # print(blocks_to_watermark_final)
+
 
     divisions = original_image.shape[0] / block_size
 
-    watermark = np.concatenate((watermark, watermark), axis=0)
+    #watermark = np.concatenate((watermark, watermark), axis=0)
 
     Coefficients = pywt.wavedec2(original_image, wavelet='haar', level=1)
     shape_LL = Coefficients[0].shape  # Coefficients[0] is LL
@@ -125,7 +227,7 @@ def embedding(original_image, watermark):
     shape_LL_tmp = np.floor(min(shape_LL) / divisions)
     #print(shape_LL_tmp)
     shape_LL_tmp = np.uint8(shape_LL_tmp)
-    LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
+    #LL_tmp = np.zeros((shape_LL_tmp, shape_LL_tmp))
 
 
     # loops trough x coordinates of blocks_to_watermark_final
@@ -146,13 +248,11 @@ def embedding(original_image, watermark):
 
         locations = np.argsort(-ori_dct, axis=None)  # - sign is used to get descending order
         locations = [(val // rows, val % rows) for val in locations]  # locations as (x,y) coordinates
-        # Embed the watermark
+
         watermarked_dct = ori_dct.copy()
 
-
-
         for idx, loc in enumerate(locations[1:watermark_size + 1]):
-            if watermark_ori[idx] == 1:
+            if watermark_to_embed[idx] == 1:
                 watermarked_dct[loc] += (alpha)
             else:
                 watermarked_dct[loc] -= (alpha)
@@ -180,7 +280,7 @@ def embedding(original_image, watermark):
 
     plt.subplot(121)
     plt.title("original")
-    plt.imshow(-watermarked_image + original_image, cmap='gray')
+    plt.imshow(original_image, cmap='gray')
     plt.subplot(122)
     plt.title("watermarked")
     plt.imshow(watermarked_image, cmap='gray')
@@ -213,6 +313,7 @@ def detection(original_image, watermarked_image, attacked_image):
 def extraction(original_image, watermarked_image, attacked_image):
     n_blocks_to_embed = 512
     block_size = 8
+    watermark_size = 1024
     blocks_with_watermark = []
     divisions = original_image.shape[0] / block_size
 
@@ -441,6 +542,7 @@ def print_successful_attacks(successful_attacks, image_name='lena.bmp'):
 
 ####BF ATTACK
 def bf_attack(original_image, watermarked_image):
+    watermark_size = 1024
     current_best_wpsnr = 0
 
     for attack in attacks:
@@ -678,25 +780,21 @@ def bf_attack(original_image, watermarked_image):
 
 
 
-watermark_size = 1024
-watermark_path = "howimetyourmark.npy"
-watermark_ori = np.load(watermark_path)
+
 
 original_image_path = "images/lena.bmp"
-original_image = cv2.imread(original_image_path, 0)
 
-np.random.seed(seed=200)
 
 # Generate a watermark
 #mark = np.random.uniform(0.0, 1.0, watermark_size)
 #mark = np.uint8(np.rint(mark))
 #np.save('mark.npy', mark)
 
-watermarked_image = embedding(original_image, watermark_ori)
-watermark = extraction(original_image, watermarked_image, watermarked_image)
-print(watermark)
-T = compute_thr(watermark_size, watermark)
-bf_attack(original_image, watermarked_image)
+watermarked_image = embedding(original_image_path)
+#watermark = extraction(original_image, watermarked_image, watermarked_image)
+#print(watermark)
+#T = compute_thr(watermark_size, watermark)
+#bf_attack(original_image, watermarked_image)
 
 
 
