@@ -67,12 +67,12 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermark_to_embed = np.load(watermark_path)
 
 
-    alpha = 5  # 8 is the lower limit that can be used
-    n_blocks_to_embed = 1024
+    alpha = 2  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 512
     block_size = 4
     # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
     spatial_function = 'average'
-    spatial_weight = 0.5  # 0: no spatial domain, 1: only spatial domain
+    spatial_weight = 0.1  # 0: no spatial domain, 1: only spatial domain
     attack_weight = 1.0 - spatial_weight
 
 
@@ -178,12 +178,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermark_to_embed = watermark_to_embed.reshape(32,32)
     Uwm, Swm, Vwm = np.linalg.svd(watermark_to_embed)
 
-    # Uvm as np array
-    Uwm = np.array(Uwm)
-    Vwm = np.array(Vwm)
-
-    np.savetxt('Uwm.txt', Uwm, delimiter=',')
-    np.savetxt('Vwm.txt', Vwm, delimiter=',')
+    #print('swm', Swm)
 
     for i in range(len(blocks_to_watermark_final)):
 

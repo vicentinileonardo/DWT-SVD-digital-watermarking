@@ -115,3 +115,7 @@ print(wpsnr)
 test_detection('../sample-images/0000.bmp', 'watermarked.bmp')
 watermark_ex = detection_howimetyourmark.extraction(original, watermarked, watermarked)
 check_mark(np.load('howimetyourmark.npy'), watermark_ex)
+
+# print 2 watermarks
+print('watermark 1: ', np.load('howimetyourmark.npy'))
+print('watermark 2: ', watermark_ex)

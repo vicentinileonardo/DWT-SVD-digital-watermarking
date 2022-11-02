@@ -41,8 +41,8 @@ def extraction(input1, input2, input3):
     watermarked_image = input2
     attacked_image = input3
 
-    alpha = 5  # 8 is the lower limit that can be used
-    n_blocks_to_embed = 1024
+    alpha = 2  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 512
     block_size = 4
     watermark_size = 1024
 
@@ -98,13 +98,17 @@ def extraction(input1, input2, input3):
 
         Sdiff = Sc - Sc_ori
 
-        Swm[(i*shape_LL_tmp)%watermark_extracted.shape[0]: (shape_LL_tmp+(i*shape_LL_tmp)%watermark_extracted.shape[0])] += Sdiff/alpha
+        #print('interval 1 inizio: ', (i*shape_LL_tmp)%watermark_extracted.shape[0])
+        #print('fine: ', (shape_LL_tmp+(i*shape_LL_tmp)%watermark_extracted.shape[0]))
+        #print('abs sdifff/alpha', abs(Sdiff/alpha))
+
+
+        Swm[(i*shape_LL_tmp)%watermark_extracted.shape[0]: (shape_LL_tmp+(i*shape_LL_tmp)%watermark_extracted.shape[0])] += abs(Sdiff/alpha)
 
     Swm /= watermark_extracted.shape[0]
     watermark_extracted = (Uwm).dot(np.diag(Swm)).dot(Vwm)
-    watermark_extracted = np.uint8(watermark_extracted.reshape(1024))
-
-
+    watermark_extracted = watermark_extracted.reshape(1024)
+    watermark_extracted /= np.max(watermark_extracted)
 
 
 ####################################################################################################################
@@ -125,8 +129,8 @@ def detection(input1, input2, input3):
     # start time
     #start = time.time()
 
-    alpha = 5  # 8 is the lower limit that can be used
-    n_blocks_to_embed = 1024
+    alpha = 2  # 8 is the lower limit that can be used
+    n_blocks_to_embed = 512
     block_size = 4
     watermark_size = 1024
     T = 15.86
@@ -187,11 +191,13 @@ def detection(input1, input2, input3):
 
         Sdiff = Sc - Sc_ori
 
-        Swm[(i * shape_LL_tmp) % watermark_extracted.shape[0]: (shape_LL_tmp + (i * shape_LL_tmp) % watermark_extracted.shape[0])] += Sdiff / alpha
+        Swm[(i * shape_LL_tmp) % watermark_extracted.shape[0]: (shape_LL_tmp + (i * shape_LL_tmp) % watermark_extracted.shape[0])] += abs(Sdiff / alpha)
+
 
     Swm /= watermark_extracted.shape[0]
     watermark_extracted = (Uwm).dot(np.diag(Swm)).dot(Vwm)
-    watermark_extracted = np.uint8(watermark_extracted.reshape(1024))
+    watermark_extracted = watermark_extracted.reshape(1024)
+    watermark_extracted /= np.max(watermark_extracted)
 
     ####################################################################################################################
     #end of extraction
