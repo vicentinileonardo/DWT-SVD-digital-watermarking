@@ -158,7 +158,7 @@ def compute_roc():
     plt.legend(loc="lower right")
     plt.show()
 
-    idx_tpr = np.where((fpr - 0.09) == min(i for i in (fpr - 0.09) if i > 0))
+    idx_tpr = np.where((fpr - 0.05) == min(i for i in (fpr - 0.05) if i > 0))
     print('For a FPR approximately equals to 0.05 corresponds a TPR equals to %0.2f' % tpr[idx_tpr[0][0]])
     print('For a FPR approximately equals to 0.05 corresponds a threshold equals to %0.2f' % tau[idx_tpr[0][0]])
     print('Check FPR %0.2f' % fpr[idx_tpr[0][0]])
@@ -171,3 +171,5 @@ compute_roc()
 
 #13.71 con alpha = 2, 512 blocks, 0.1 spatial
 #13.45 con alpha = 2.25, 512 blocks, 0.33 spatial
+#14.07 alpha=4, 64 blocks, 0.33 spatial
+#14.86 alpha=6, 32 blocks, 0.33 spatial, fpr 0.05
