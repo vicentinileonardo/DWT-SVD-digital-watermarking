@@ -98,11 +98,6 @@ def extraction(input1, input2, input3):
 
         Sdiff = Sc - Sc_ori
 
-        #print('interval 1 inizio: ', (i*shape_LL_tmp)%watermark_extracted.shape[0])
-        #print('fine: ', (shape_LL_tmp+(i*shape_LL_tmp)%watermark_extracted.shape[0]))
-        #print('abs sdifff/alpha', abs(Sdiff/alpha))
-
-
         Swm[(i*shape_LL_tmp)%watermark_extracted.shape[0]: (shape_LL_tmp+(i*shape_LL_tmp)%watermark_extracted.shape[0])] += abs(Sdiff/alpha)
 
     Swm /= watermark_extracted.shape[0]
@@ -133,7 +128,7 @@ def detection(input1, input2, input3):
     n_blocks_to_embed = 512
     block_size = 4
     watermark_size = 1024
-    T = 15.86
+    T = 13.71
 
 
     #extract watermark from watermarked image

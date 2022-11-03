@@ -178,8 +178,6 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermark_to_embed = watermark_to_embed.reshape(32,32)
     Uwm, Swm, Vwm = np.linalg.svd(watermark_to_embed)
 
-    #print('swm', Swm)
-
     for i in range(len(blocks_to_watermark_final)):
 
         x = np.uint16(blocks_to_watermark_final[i]['locations'][0])
