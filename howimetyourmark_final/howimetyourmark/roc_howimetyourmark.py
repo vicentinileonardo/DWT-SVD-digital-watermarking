@@ -170,3 +170,4 @@ def compute_roc():
 compute_roc()
 
 #13.71 con alpha = 2, 512 blocks, 0.1 spatial
+#13.45 con alpha = 2.25, 512 blocks, 0.33 spatial

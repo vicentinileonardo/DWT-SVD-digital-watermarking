@@ -116,9 +116,9 @@ def jpeg_compression(img, QF):
 '''ATTACKS PARAMETERS'''
 # brute force attack
 successful_attacks = []
-# attacks = ["awgn", "blur", "sharpening", "median", "resizing", "jpeg_compression"]
+attacks = ["awgn", "blur", "sharpening", "median", "resizing", "jpeg_compression"]
 # attacks = ["blur", "median", "jpeg_compression"]
-attacks = ["jpeg_compression", "awgn", "blur"]
+##attacks = ["jpeg_compression", "awgn", "blur"]
 
 # setting parameter ranges
 
@@ -226,7 +226,7 @@ def print_successful_attacks(successful_attacks, image_name='lena.bmp'):
 
 
 def bf_attack(original_image, watermarked_image):
-  T = 13.71
+  T = 13.45
 
 
   current_best_wpsnr = 0

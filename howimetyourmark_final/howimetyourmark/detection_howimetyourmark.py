@@ -41,7 +41,7 @@ def extraction(input1, input2, input3):
     watermarked_image = input2
     attacked_image = input3
 
-    alpha = 2  # 8 is the lower limit that can be used
+    alpha = 2.25  # 8 is the lower limit that can be used
     n_blocks_to_embed = 512
     block_size = 4
     watermark_size = 1024
@@ -124,11 +124,11 @@ def detection(input1, input2, input3):
     # start time
     #start = time.time()
 
-    alpha = 2  # 8 is the lower limit that can be used
+    alpha = 2.25  # 8 is the lower limit that can be used
     n_blocks_to_embed = 512
     block_size = 4
     watermark_size = 1024
-    T = 13.71
+    T = 13.45
 
 
     #extract watermark from watermarked image
