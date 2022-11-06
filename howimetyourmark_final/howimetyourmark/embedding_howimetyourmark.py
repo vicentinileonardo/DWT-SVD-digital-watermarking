@@ -67,7 +67,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermark_to_embed = np.load(watermark_path)
 
 
-    alpha = 6  # 8 is the lower limit that can be used
+    alpha = 4.85  # 8 is the lower limit that can be used
     n_blocks_to_embed = 32
     block_size = 4
     # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
@@ -213,8 +213,8 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermarked_image += np.uint8(blank_image)
 
     # Compute quality
-    #w = wpsnr(original_image, watermarked_image)
-    #print('[EMBEDDING] wPSNR: %.2fdB' % w)
+    w = wpsnr(original_image, watermarked_image)
+    print('[EMBEDDING] wPSNR: %.2fdB' % w)
 
     return watermarked_image
 

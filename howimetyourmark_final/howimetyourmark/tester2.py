@@ -67,7 +67,7 @@ def test_detection(original_image, watermarked_image):
 
   attacked.append(embedding_howimetyourmark.blur(img, 15))
   attacked.append(embedding_howimetyourmark.awgn(img, 50, 123))
-  # attacked.append(resizing(img, 0.1))
+  attacked.append(resizing(img, 0.1))
 
   for i, a in enumerate(attacked):
     aName = 'attacked-%d.bmp' % i
@@ -117,7 +117,7 @@ def jpeg_compression(img, QF):
 # brute force attack
 successful_attacks = []
 attacks = ["jpeg_compression","awgn", "blur", "sharpening", "median", "resizing"]
-# attacks = ["blur", "median", "jpeg_compression"]
+#attacks = ["resizing"]
 ##attacks = ["jpeg_compression", "awgn", "blur"]
 
 # setting parameter ranges
@@ -185,12 +185,15 @@ def median(img, kernel_size):
     return attacked
 
 def resizing(img, scale):
-  from skimage.transform import rescale
   x, y = img.shape
-  attacked = rescale(img, scale)
-  attacked = rescale(attacked, 1/scale)
-  attacked = attacked[:x, :y]
+  _x = int(x*scale)
+  _y = int(y*scale)
+
+  attacked = cv2.resize(img, (_x, _y))
+  attacked = cv2.resize(attacked, (x, y))
+
   return attacked
+
 
 def plot_attack(original_image, watermarked_image, attacked_image):
     plt.figure(figsize=(15, 6))
@@ -398,6 +401,7 @@ def bf_attack(original_image_path, watermarked_image_path):
     if attack == 'resizing':
       for scale_value in resizing_scale_values:
         watermarked_to_attack = watermarked_image.copy()
+        attacked_image = resizing(watermarked_to_attack, scale_value)
 
         cv2.imwrite('attacked_image.bmp', attacked_image)
         watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
@@ -428,32 +432,19 @@ def bf_attack(original_image_path, watermarked_image_path):
 
 ###############################################################################################################
 
-watermarked = embedding_howimetyourmark.embedding('../sample-images/0000.bmp', 'howimetyourmark.npy')
-cv2.imwrite('watermarked.bmp', watermarked)
+original_image_path_1 = '../sample-images/0002.bmp'
+original_image_path_2 = ''
+original_image_path_3 = ''
 
-original = cv2.imread('../sample-images/0000.bmp', 0)
-watermarked = cv2.imread('watermarked.bmp', 0)
-w = detection_howimetyourmark.wpsnr(original, watermarked)
-print('[EMBEDDING] wPSNR: %.2fdB' % w)
+original = cv2.imread(original_image_path_1, 0)
+
+watermarked = embedding_howimetyourmark.embedding(original_image_path_1, 'howimetyourmark.npy')
+cv2.imwrite('watermarked_image1_howimetyourmark.bmp', watermarked)
 
 
 
-#attack
-attacked = jpeg_compression(watermarked, 99)
-cv2.imwrite('attacked.bmp', attacked)
-plt.imshow(attacked)
-plt.show()
-
-#
-start = time.time()
-dec, wpsnr_atk = detection_howimetyourmark.detection('../sample-images/0000.bmp', 'watermarked.bmp', 'attacked.bmp')
-print('time consumed: ', time.time() - start)
-
-print(dec)
-print(wpsnr_atk)
-
-test_detection('../sample-images/0000.bmp', 'watermarked.bmp')
+test_detection(original_image_path_1, 'watermarked_image1_howimetyourmark.bmp')
 watermark_ex = detection_howimetyourmark.extraction(original, watermarked, watermarked)
 check_mark(np.load('howimetyourmark.npy'), watermark_ex)
 
-bf_attack('../sample-images/0000.bmp', 'watermarked.bmp')
+bf_attack(original_image_path_1, 'watermarked_image1_howimetyourmark.bmp')

@@ -172,4 +172,10 @@ compute_roc()
 #13.71 con alpha = 2, 512 blocks, 0.1 spatial
 #13.45 con alpha = 2.25, 512 blocks, 0.33 spatial
 #14.07 alpha=4, 64 blocks, 0.33 spatial
-#14.86 alpha=6, 32 blocks, 0.33 spatial, fpr 0.05
+
+#14.86 alpha=6, 32 blocks, 0.33 spatial, fpr 0.05 0 attacchi
+#14.82 alpha=5, 32blocks, 0.33 spatial, fpr 0.05 | (rifacendo la roc, 14.67) 0 attacchi, 1 embedding sotto i 66
+#14.79 alpha=4.85, 32blocks, 0.33 spatial, fpr 0.05, | 1 embedding sotto i 66
+
+
+
