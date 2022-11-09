@@ -10,7 +10,7 @@ from math import sqrt
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import medfilt
 
-# Detection, with these parameters, passes the 6 checks of the test_detection.py file on Google Drive
+# Detection, with these parameters, passes the 6 checks of the tester2.py script
 def wpsnr(img1, img2):
     img1 = np.float32(img1) / 255.0
     img2 = np.float32(img2) / 255.0
@@ -155,7 +155,6 @@ def detection(input1, input2, input3):
 
     attacked_image -= np.uint8(blank_image)
 
-    ####################################################################################################################
 
     shape_LL_tmp = np.floor(original_image.shape[0] / (2*divisions))
     shape_LL_tmp = np.uint8(shape_LL_tmp)
@@ -193,7 +192,7 @@ def detection(input1, input2, input3):
     watermark_extracted = watermark_extracted.reshape(1024)
     watermark_extracted /= np.max(watermark_extracted)
 
-    ####################################################################################################################
+
     #end of extraction
 
     sim = similarity(watermark_extracted_wm, watermark_extracted)

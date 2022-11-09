@@ -72,10 +72,9 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     watermark_to_embed = np.load(watermark_path)
 
 
-    alpha = 5.11  # 8 is the lower limit that can be used
-    n_blocks_to_embed = 32
+    alpha = 5.11
+    n_blocks_to_embed = 32 # if greater than 16, the watermark is embedded more than one time (redundancy)
     block_size = 4
-    # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
     spatial_function = 'average'
     spatial_weight = 0.33  # 0: no spatial domain, 1: only spatial domain
     attack_weight = 1.0 - spatial_weight
@@ -91,7 +90,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     #QF = [5,6, 7, 8,9, 10]
     #for qf in QF:
     #    attacked_image_tmp = jpeg_compression(original_image, qf)
-     #   blank_image += np.abs(attacked_image_tmp - original_image)
+    #    blank_image += np.abs(attacked_image_tmp - original_image)
 
     blur_sigma_values = [0.1, 0.5, 1, 2, [1, 1], [2, 1]]
     for sigma in blur_sigma_values:
@@ -120,6 +119,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
         attacked_image_tmp = cv2.resize(original_image, (0, 0), fx=scale, fy=scale)
         attacked_image_tmp = cv2.resize(attacked_image_tmp, (512, 512))
         blank_image += np.abs(attacked_image_tmp - original_image)
+
     #plot blank image
     #plt.title('Attack phase mask')
     #plt.imshow(blank_image, cmap='gray')
@@ -171,7 +171,6 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
 
     blocks_to_watermark_final = sorted(blocks_to_watermark_final, key=lambda k: k['locations'], reverse=False)
 
-####################################################################################################################
 
     divisions = original_image.shape[0] / block_size
 
@@ -209,8 +208,6 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
         #replace the block in the original image
         watermarked_image[x:x + block_size, y:y + block_size] = block_new
 
-
-####################################################################################################################
 
     watermarked_image = np.uint8(watermarked_image)
 
