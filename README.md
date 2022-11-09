@@ -1,7 +1,9 @@
 # DWT-SVD-digital-watermarking
-Repository related to the Catch the Mark competition of the Multimedia Data Security course of University of Trento, academic year 2022/2023
+Repository related to the Catch the Mark competition of the **Multimedia Data Security** graduate course of University of Trento, academic year 2022/2023.
 <br><br>
-Group name: howimetyourmark
+Group name: **howimetyourmark**
+
+Final mark: **30/30**
 
 Contributors:
 + Leonardo Vicentini - [vicentinileonardo](https://github.com/vicentinileonardo)
