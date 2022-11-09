@@ -63,11 +63,16 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
 
     original_image = cv2.imread(original_image, 0)
 
+    # plot original image
+    plt.title("Original image")
+    plt.imshow(original_image, cmap='gray')
+    plt.show()
+
     watermark_size = 1024
     watermark_to_embed = np.load(watermark_path)
 
 
-    alpha = 4.85  # 8 is the lower limit that can be used
+    alpha = 5.11  # 8 is the lower limit that can be used
     n_blocks_to_embed = 32
     block_size = 4
     # spatial_functions = ['average', 'median', 'mean', 'max', 'min', 'gaussian', 'laplacian', 'sobel', 'prewitt', 'roberts']
@@ -116,6 +121,7 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
         attacked_image_tmp = cv2.resize(attacked_image_tmp, (512, 512))
         blank_image += np.abs(attacked_image_tmp - original_image)
     #plot blank image
+    #plt.title('Attack phase mask')
     #plt.imshow(blank_image, cmap='gray')
     #plt.show()
 
@@ -215,6 +221,11 @@ def embedding(original_image, watermark_path="howimetyourmark.npy" ):
     # Compute quality
     w = wpsnr(original_image, watermarked_image)
     print('[EMBEDDING] wPSNR: %.2fdB' % w)
+
+    #plot watermarked image
+    plt.title('Watermarked image')
+    plt.imshow(watermarked_image, cmap='gray')
+    plt.show()
 
     return watermarked_image
 

@@ -176,6 +176,28 @@ compute_roc()
 #14.86 alpha=6, 32 blocks, 0.33 spatial, fpr 0.05 0 attacchi
 #14.82 alpha=5, 32blocks, 0.33 spatial, fpr 0.05 | (rifacendo la roc, 14.67) 0 attacchi, 1 embedding sotto i 66
 #14.79 alpha=4.85, 32blocks, 0.33 spatial, fpr 0.05, | 1 embedding sotto i 66
+#14.74 alpha=5.15, 32blocks, 0.33 spatial, fpr 0.05, | 2 attacchi
+#14.79 alpha=5.25, 32blocks, 0.33 spatial, fpr 0.05, | 2 attacchi
+#14.66 alpha=4.5, 64blocks, 0.33 spatial, fpr 0.05, tanti embedding sotto i 65
+#14.80 alpha=5.25, 32blocks, 0.25 spatial, fpr 0.05
+#14.84 alpha=5, 32blocks, 0.2 spatial, fpr 0.05
+#14.83 alpha=5, 32blocks, 0.15 spatial, fpr 0.05
+#15.08 alpha=6, 16blocks, 0.33 spatial, fpr 0.05
+#14.96 alpha=5.15, 32blocks, 0.20 spatial, fpr 0.05
+#14.88 alpha=5.15, 32blocks, 0.15 spatial, fpr 0.05
+#15.02 alpha=5.75, 32blocks, 0.15 spatial, fpr 0.05
+#14.80 alpha=5.75, 32blocks, 0.33 spatial, fpr 0.05
+#14.88 alpha=5.85 32blocks, 0.33 spatial, fpr 0.05
 
+
+#14.57 alpha=6, 32blocks, 0.50 spatial, fpr 0.07
+#14.63 alpha=6, 32blocks, 0.40 spatial, fpr 0.07
+#14.66 alpha=6, 32blocks, 0.30 spatial, fpr 0.07
+#14.66 alpha=6, 32blocks, 0.25 spatial, fpr 0.07
+#14.77 alpha=6, 32blocks, 0.20 spatial, fpr 0.07
+#14.72 alpha=6, 32blocks, 0.15 spatial, fpr 0.07
+#14.70 alpha=6, 32blocks, 0.10 spatial, fpr 0.07
+#14.83 alpha=6, 32blocks, 0.05 spatial, fpr 0.07
+#15.20 alpha=6, 32blocks, 0.00 spatial, fpr 0.07
 
 

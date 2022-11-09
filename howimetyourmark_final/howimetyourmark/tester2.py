@@ -116,14 +116,14 @@ def jpeg_compression(img, QF):
 '''ATTACKS PARAMETERS'''
 # brute force attack
 successful_attacks = []
-attacks = ["jpeg_compression","awgn", "blur", "sharpening", "median", "resizing"]
+attacks = ["jpeg_compression","median","blur", "awgn",  "sharpening",  "resizing"]
 #attacks = ["resizing"]
 ##attacks = ["jpeg_compression", "awgn", "blur"]
 
 # setting parameter ranges
 
 # awgn
-awgn_std_values = [2.0, 4.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+awgn_std_values = [2.0, 4.0, 10.0, 20.0]
 # awgn_seed_values = []
 awgn_mean_values = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
 
@@ -135,14 +135,10 @@ jpeg_compression_QF_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 blur_sigma_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
                      1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
                      2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9,
-                     3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9,
-                     4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9,
-                     5, 6, 7, 8, 9, 10,
+                     3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6,
                      [1, 1], [1, 2], [1, 3], [1, 4], [1, 5],
-                     [2, 1], [2, 2], [2, 3], [2, 4], [2, 5],
-                     [3, 1], [3, 2], [3, 3], [3, 4], [3, 5],
-                     [4, 1], [4, 2], [4, 3], [4, 4], [4, 5],
-                     [5, 1], [5, 2], [5, 3], [5, 4], [5, 5]
+                     [2, 1], [2, 2]
+
                      ]
 
 # sharpening
@@ -432,19 +428,22 @@ def bf_attack(original_image_path, watermarked_image_path):
 
 ###############################################################################################################
 
-original_image_path_1 = '../sample-images/0002.bmp'
-original_image_path_2 = ''
-original_image_path_3 = ''
+##EMBEDDING
+original_image_path_1 = 'utilities/originals/lena.bmp'
+#original_image_path_2 = 'utilities/originals/tree.bmp'
+#original_image_path_3 = 'utilities/originals/rollercoaster.bmp'
 
 original = cv2.imread(original_image_path_1, 0)
 
 watermarked = embedding_howimetyourmark.embedding(original_image_path_1, 'howimetyourmark.npy')
-cv2.imwrite('watermarked_image1_howimetyourmark.bmp', watermarked)
+#cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_buildings.bmp', watermarked)
+#cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_tree.bmp', watermarked)
+#cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_rollercoaster.bmp', watermarked)
 
 
 
-test_detection(original_image_path_1, 'watermarked_image1_howimetyourmark.bmp')
-watermark_ex = detection_howimetyourmark.extraction(original, watermarked, watermarked)
-check_mark(np.load('howimetyourmark.npy'), watermark_ex)
+#test_detection(original_image_path_1, 'utilities/watermarked/howimetyourmark/tree_howimetyourmark.bmp')
+#watermark_ex = detection_howimetyourmark.extraction(original, watermarked, watermarked)
+#check_mark(np.load('howimetyourmark.npy'), watermark_ex)
 
-bf_attack(original_image_path_1, 'watermarked_image1_howimetyourmark.bmp')
+#bf_attack(original_image_path_1, 'utilities/watermarked/howimetyourmark/buildings_howimetyourmark.bmp')
