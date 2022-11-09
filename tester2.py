@@ -19,7 +19,7 @@ def wpsnr(img1, img2):
     same = not np.any(difference)
     if same is True:
         return 9999999
-    csf = np.genfromtxt('csf.csv', delimiter=',')
+    csf = np.genfromtxt('utilities/csf.csv', delimiter=',')
     ew = convolve2d(difference, np.rot90(csf, 2), mode='valid')
     decibels = 20.0 * np.log10(1.0 / sqrt(np.mean(np.mean(ew ** 2))))
     return decibels
@@ -433,7 +433,7 @@ original_image_path_1 = 'utilities/originals/lena.bmp'
 
 original = cv2.imread(original_image_path_1, 0)
 
-watermarked = embedding_howimetyourmark.embedding(original_image_path_1, 'howimetyourmark.npy')
+watermarked = embedding_howimetyourmark.embedding(original_image_path_1, 'utilities/howimetyourmark.npy')
 #cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_buildings.bmp', watermarked)
 #cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_tree.bmp', watermarked)
 #cv2.imwrite('utilities/watermarked/howimetyourmark/howimetyourmark_rollercoaster.bmp', watermarked)

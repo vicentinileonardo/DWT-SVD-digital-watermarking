@@ -82,7 +82,7 @@ def compute_roc():
 
     # generate your watermark (if it is necessary)
     watermark_size = 1024
-    watermark_path = "howimetyourmark.npy"
+    watermark_path = "utilities/howimetyourmark.npy"
     watermark = np.load(watermark_path)
 
     # scores and labels are two lists we will use to append the values of similarity and their labels
