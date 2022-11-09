@@ -535,7 +535,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                         print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                         print('\n')
                         
-                        status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                        status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                         if status == False:
                             print("Wrong group name")
                         break
@@ -599,7 +599,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                         print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                         print('\n')
                         
-                        status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                        status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                         if status == False:
                             print("Wrong group name")
                         break
@@ -663,7 +663,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                             print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                             print('\n')
                             
-                            status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                            status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                             if status == False:
                                 print("Wrong group name")
 
@@ -727,7 +727,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                             print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                             print('\n')
 
-                            status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                            status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                             if status == False:
                                 print("Wrong group name")
 
@@ -789,7 +789,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                         print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                         print('\n')
                         
-                        status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                        status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                         if status == False:
                             print("Wrong group name")
 
@@ -852,7 +852,7 @@ def bf_attack(original_image_path, watermarked_image_path, group_name, image_nam
                         print(image_name, ';', group_name, ';', tmp_wpsnr, ';', str(current_attack),' - SUCCESS')
                         print('\n')
                         
-                        status = cv2.imwrite('save_attacked/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
+                        status = cv2.imwrite('attacked_images/'+ group_name + '/' + str(tmp_wpsnr) + '_'+ attack + '_howimetyourmark_'+ group_name + '_' + image_name +'.bmp', attacked_image)
                         if status == False:
                             print("Wrong group name")
 

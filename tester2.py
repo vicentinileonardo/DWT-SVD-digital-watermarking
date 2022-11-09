@@ -80,7 +80,7 @@ def test_detection(original_image, watermarked_image):
     print('OK 4 watermark not found in destroyed images')
 
   # 5. CHECK UNRELATED IMAGES
-  files = [os.path.join('TESTImages', f) for f in os.listdir('TESTImages')]
+  files = [os.path.join('test_images', f) for f in os.listdir('test_images')]
   c = 0
   for f in files:
     unr = cv2.imread(f, 0)

@@ -72,10 +72,10 @@ def compute_roc():
     from sklearn.metrics import roc_curve, auc
 
     sample_images = []
-    # loop for importing images from sample-images folder
-    for filename in os.listdir('sample-images'):
+    # loop for importing images from sample_images folder
+    for filename in os.listdir('sample_images'):
         if filename.endswith(".bmp"):
-            path_tmp = os.path.join('sample-images', filename)
+            path_tmp = os.path.join('sample_images', filename)
             sample_images.append(path_tmp)
 
     sample_images.sort()

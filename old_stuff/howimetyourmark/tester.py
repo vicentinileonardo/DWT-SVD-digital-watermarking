@@ -17,7 +17,7 @@ def jpeg_compression(img, QF):
 
 np.set_printoptions(threshold=np.inf)
 
-watermarked = embedding_howimetyourmark.embedding('../sample-images/0088.bmp', 'howimetyourmark.npy')
+watermarked = embedding_howimetyourmark.embedding('../sample_images/0088.bmp', 'howimetyourmark.npy')
 cv2.imwrite('watermarked.bmp', watermarked)
 
 
@@ -29,7 +29,7 @@ plt.show()
 
 #
 start = time.time()
-dec, wpsnr = detection_howimetyourmark.detection('../sample-images/0088.bmp', 'watermarked.bmp', 'attacked.bmp')
+dec, wpsnr = detection_howimetyourmark.detection('../sample_images/0088.bmp', 'watermarked.bmp', 'attacked.bmp')
 print('time consumed: ', time.time() - start)
 
 print(dec)
