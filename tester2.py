@@ -1,10 +1,8 @@
 import embedding_howimetyourmark, detection_howimetyourmark
 import time
-import random
 import cv2
 import os
 import numpy as np
-import pywt
 from matplotlib import pyplot as plt
 from scipy.signal import convolve2d
 from math import sqrt
@@ -241,7 +239,7 @@ def bf_attack(original_image_path, watermarked_image_path):
         attacked_image = jpeg_compression(watermarked_to_attack, QF_value)
 
         cv2.imwrite('attacked_image.bmp', attacked_image)
-        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
         current_attack = {}
         current_attack["Attack_name"] = 'JPEG_Compression'
@@ -272,7 +270,7 @@ def bf_attack(original_image_path, watermarked_image_path):
         attacked_image = blur(watermarked_to_attack, sigma_value)
 
         cv2.imwrite('attacked_image.bmp', attacked_image)
-        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
         current_attack = {}
         current_attack["Attack_name"] = 'blur'
@@ -304,7 +302,7 @@ def bf_attack(original_image_path, watermarked_image_path):
           attacked_image = awgn(watermarked_to_attack, std_value, mean_value)
 
           cv2.imwrite('attacked_image.bmp', attacked_image)
-          watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+          watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
           current_attack = {}
           current_attack["Attack_name"] = 'awgn'
@@ -337,7 +335,7 @@ def bf_attack(original_image_path, watermarked_image_path):
           attacked_image = sharpening(watermarked_to_attack, sigma_value, alpha_value)
 
           cv2.imwrite('attacked_image.bmp', attacked_image)
-          watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+          watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
           current_attack = {}
           current_attack["Attack_name"] = 'Sharpening'
@@ -370,7 +368,7 @@ def bf_attack(original_image_path, watermarked_image_path):
         attacked_image = median(watermarked_to_attack, kernel_size_value)
 
         cv2.imwrite('attacked_image.bmp', attacked_image)
-        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
         current_attack = {}
         current_attack["Attack_name"] = 'median'
@@ -400,7 +398,7 @@ def bf_attack(original_image_path, watermarked_image_path):
         attacked_image = resizing(watermarked_to_attack, scale_value)
 
         cv2.imwrite('attacked_image.bmp', attacked_image)
-        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path,'attacked_image.bmp')
+        watermark_status, tmp_wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, 'attacked_image.bmp')
 
         current_attack = {}
         current_attack["Attack_name"] = 'resizing'

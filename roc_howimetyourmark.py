@@ -3,10 +3,7 @@ import random
 import cv2
 import os
 import numpy as np
-import pywt
 from matplotlib import pyplot as plt
-from scipy.signal import convolve2d
-from math import sqrt
 from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import medfilt
 import embedding_howimetyourmark, detection_howimetyourmark
@@ -76,9 +73,9 @@ def compute_roc():
 
     sample_images = []
     # loop for importing images from sample-images folder
-    for filename in os.listdir('../sample-images'):
+    for filename in os.listdir('sample-images'):
         if filename.endswith(".bmp"):
-            path_tmp = os.path.join('../sample-images', filename)
+            path_tmp = os.path.join('sample-images', filename)
             sample_images.append(path_tmp)
 
     sample_images.sort()

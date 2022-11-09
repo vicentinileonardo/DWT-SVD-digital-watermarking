@@ -6,12 +6,3 @@ Contributors:
 + Matteo Darra - [MatteoDarra](https://github.com/MatteoDarra)
 + Sofia Zanrosso - [sofiazanrosso](https://github.com/sofiazanrosso)
 + Roberta Bonaccorso - [robi00](https://github.com/robi00)
-
-TODO list:
-+ Threshold computation
-+ ROC
-+ Modularize the code
-+ Refactor the code
-+ Optimizing attacks
-+ Optimizing embedding
-+ Parameter tuning
