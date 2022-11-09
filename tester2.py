@@ -427,7 +427,7 @@ def bf_attack(original_image_path, watermarked_image_path):
 ###############################################################################################################
 
 ##EMBEDDING
-original_image_path_1 = 'utilities/originals/lena.bmp'
+original_image_path_1 = 'utilities/originals/buildings.bmp'
 #original_image_path_2 = 'utilities/originals/tree.bmp'
 #original_image_path_3 = 'utilities/originals/rollercoaster.bmp'
 
