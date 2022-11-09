@@ -18,7 +18,6 @@ Directory structure:
 + `roc_howimetyourmark.py` - contains the source code for calculating the ROC curves of the detection algorithm
 <br><br>
 + `ROC.png` - contains an example of a ROC curve
-+ `csf.csv` - contains generic values 
 + `utilities folder` - contains original and watermaked images used during the challenge, a `.csv` file used to compute the WPSNR metric and the watermark assigned to our group and 
 + `sample_images` - contains sample images used to compute the ROC curves
 + `test_images` - contains images used to test the detection algorithms
