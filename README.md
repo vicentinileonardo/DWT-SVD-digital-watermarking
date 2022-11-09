@@ -117,7 +117,7 @@ We decided to go for a different approach, we therefore ranked all the blocks ba
 
 The general flow of our embedding strategy, starting from the original image and the watermark, can be seen in this flowchart:
 
-![Flowchart](utilities/README_images/embedding_flowchart.png)
+![Flowchart](presentation/README_images/embedding_flowchart.png)
 
 The major steps are: 
 1. Selection of blocks based on “merit”
@@ -130,7 +130,7 @@ One additional step, peculiar to our method, is to add a **mask** of white block
 
 Focusing on the embedding step, with the help of this scheme:
 
-![Scheme](utilities/README_images/embedding_step.png)
+![Scheme](presentation/README_images/embedding_step.png)
 
 Here we applied the DWT decomposition of a single block. 
 We take only the LL and apply the singular value decomposition.
