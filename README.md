@@ -27,12 +27,79 @@ Contributors:
 + `attacked_images` - contains attacked images starting from other groups' watermarked images
 + `howimetyourmark.pdf` - contains the presentation of the group with the final outcomes
 
-## How to run the code (TODO)
+## How to run the code 
 ### Embedding
+
+You can run the embedding algorithm by importing embedding function, passing as arguments the location of the image to be watermarked and the location of the watermark to be embedded. 
+The function returns the watermarked image.
+
+```python
+import embedding_howimetyourmark
+
+original_image_path = 'path/to/original_image'
+watermark_path = 'path/to/watermark'
+watermarked = embedding_howimetyourmark.embedding(original_image_path, watermark_path)
+```
+
+To save the watermarked image, you can use the following code:
+
+```python
+import cv2
+cv2.imwrite('path/to/save/watermarked_image', watermarked)
+```
+
+
+
 ### Detection
+
+To just extract the watermark:
+
+```python
+import detection_howimetyourmark
+import cv2
+
+original_image_path = 'path/to/original_image'
+watermarked_image_path = 'path/to/watermarked_image'
+
+
+original_image = cv2.imread(original_image_path)
+watermarked_image = cv2.imread(watermarked_image_path)
+
+
+watermarked_image_path = 'path/to/watermarked/image'
+watermark_extracted = detection_howimetyourmark.extraction(original_image, watermarked_image, watermarked_image)
+```
+Note that the extraction function uses images as input, not paths.
+Instead the detection function uses paths as input.
+
+To detect the watermark and obtain the WPSNR value of the image, like after an attacked applied to the watermarked image:
+
+```python
+import detection_howimetyourmark
+import cv2
+
+original_image_path = 'path/to/original_image'
+watermarked_image_path = 'path/to/watermarked_image'
+attacked_image_path = 'path/to/attacked_image'
+
+watermark_status, wpsnr = detection_howimetyourmark.detection(original_image_path, watermarked_image_path, attacked_image_path)
+```
+
+
 ### ROC curves
+
+To compute the ROC curves, you can tune the code of the `roc_howimetyourmark.py` file and call the `compute_roc()` function.
+
 ### Testing
+
+To test the embedding and detection algorithms, you can use the `tester.py` or `tester2.py` files.
+
+In particular, in `tester2.py` with the `test_detection()` function 5 checks are performed and an addtional one is performed by `check_mark()` function.
+In addtion, in `tester2.py` you can also test the robustness of the watermarking algorithm by applying attacks to the watermarked images, using the `bf_attack()` function.
+
 ### Attacks
+
+To apply attacks to watermarked images, you can tune with your preferences the `attacks.py` file which just do a simple bruteforce against some groups' watermarked images.
 
 ## Strategy adopted
 
@@ -83,8 +150,18 @@ In order to perform the inverse of the SVD in the detection we needed the other 
 
 The papers analyzed instead used directly the watermark in the detection code.
 
+### Using our embedding strategy in the competition
 
-## Results (TODO)
+Before the challenge we precomputed multiple **thresholds** (to be used in the detection code) using the ROC curves code.
+During the competition, we tried to embed the 3 images with those combinations of parameters and our goal was to obtain at least 66.00db and no more than 66.10db in all the 3 images. 
+This was done in order to achieve maximum points for embedding quality maximizing the robustness.
+The parameter to fine tune were: 
++ parameter alpha, representing the strength of the watermark
++ n_blocks_to_embed (16, 32, 64)
++ weights given to calculate the merit (spatial function, attack phase)
+
+
+## Results
 
 ### Defense phase
 We managed to achieve the **second best embedding quality** (average WPSNR = 66.03) among all the groups participating in the challenge.

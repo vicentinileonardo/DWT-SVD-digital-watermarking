@@ -897,7 +897,7 @@ bf_attack(original_image_path_2, watermarked_image_path_2, 'thebavarians', image
 
 
 '''
-#####attacchi singoli
+##### single attacks 
 watermarked = cv2.imread(watermarked_image_path_2)
 
 #attacked = jpeg_compression(watermarked, 99)
