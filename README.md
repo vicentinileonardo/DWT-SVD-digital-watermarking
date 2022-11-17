@@ -1,5 +1,5 @@
 # DWT-SVD-digital-watermarking
-Repository related to the Catch the Mark competition of the **Multimedia Data Security** graduate course of University of Trento, academic year 2022/2023.
+Repository related to the "Catch the Mark" competition of the **Multimedia Data Security** graduate course of University of Trento, academic year 2022/2023.
 <br><br>
 Group name: **howimetyourmark**
 
@@ -21,7 +21,7 @@ Contributors:
 + `roc_howimetyourmark.py` - contains the source code for calculating the ROC curves of the detection algorithm
 <br><br>
 + `ROC.png` - contains an example of a ROC curve
-+ `utilities folder` - contains original and watermaked images used during the challenge, a `.csv` file used to compute the WPSNR metric and the watermark assigned to our group and 
++ `utilities folder` - contains original and watermarked images used during the challenge, a `.csv` file used to compute the WPSNR metric and the watermark assigned to our group and 
 + `sample_images` - contains sample images used to compute the ROC curves
 + `test_images` - contains images used to test the detection algorithms
 + `attacked_images` - contains attacked images starting from other groups' watermarked images
@@ -95,7 +95,7 @@ To compute the ROC curves, you can tune the code of the `roc_howimetyourmark.py`
 To test the embedding and detection algorithms, you can use the `tester.py` or `tester2.py` files.
 
 In particular, in `tester2.py` with the `test_detection()` function 5 checks are performed and an addtional one is performed by `check_mark()` function.
-In addtion, in `tester2.py` you can also test the robustness of the watermarking algorithm by applying attacks to the watermarked images, using the `bf_attack()` function.
+In addition, in `tester2.py` you can also test the robustness of the watermarking algorithm by applying attacks to the watermarked images, using the `bf_attack()` function.
 
 ### Attacks
 
